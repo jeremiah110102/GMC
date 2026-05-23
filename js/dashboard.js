@@ -143,6 +143,7 @@ class RealtimeNotificationManager {
 
 let realtimeNotificationManager;
 const hasNumber = /\d/;
+
 // ===== CONTENT MODERATION SYSTEM =====
 const ContentModerator = {
     bannedWords: [
