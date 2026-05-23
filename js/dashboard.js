@@ -65,84 +65,139 @@ const StorageManager = {
     }
 };
 
-// ===== REAL-TIME NOTIFICATION SYSTEM =====
+// ===== IMPROVED REAL-TIME NOTIFICATION SYSTEM =====
 class RealtimeNotificationManager {
     constructor() {
         this.notifications = [];
         this.maxNotifications = 3;
-    }
-
-    show(title, message, type = 'info', duration = 5000) {
-        const container = document.getElementById('notificationContainer') || this.createContainer();
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        
-        const icon = {
-            'success': '✓',
-            'info': 'ℹ',
-            'warning': '⚠'
-        }[type] || 'ℹ';
-
-        notification.innerHTML = `
-            <div class="notification-icon">${icon}</div>
-            <div class="notification-content">
-                <div class="notification-title">${title}</div>
-                <div class="notification-message">${message}</div>
-            </div>
-            <button class="notification-close" onclick="realtimeNotificationManager.closeNotification(this)">×</button>
-        `;
-
-        if (container.firstChild) {
-            container.insertBefore(notification, container.firstChild);
-        } else {
-            container.appendChild(notification);
-        }
-
-        this.notifications.push(notification);
-
-        if (this.notifications.length > this.maxNotifications) {
-            const oldest = this.notifications.shift();
-            if (oldest.parentElement) {
-                oldest.classList.add('fade-out');
-                setTimeout(() => oldest.remove(), 300);
-            }
-        }
-
-        if (duration > 0) {
-            setTimeout(() => {
-                if (notification.parentElement) {
-                    this.closeNotification(notification);
-                }
-            }, duration);
-        }
-
-        return notification;
+        this.notificationStack = [];
     }
 
     createContainer() {
-        const container = document.createElement('div');
-        container.id = 'notificationContainer';
-        container.className = 'notification-container';
-        document.body.appendChild(container);
+        let container = document.getElementById('notificationContainer');
+        
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'notificationContainer';
+            container.className = 'notification-container';
+            document.body.appendChild(container);
+        }
+        
         return container;
     }
 
-    closeNotification(element) {
-        const notif = element instanceof HTMLElement ? element : element.parentElement;
-        if (!notif || !notif.parentElement) return;
-        
-        notif.classList.add('fade-out');
-        setTimeout(() => {
-            if (notif.parentElement) {
-                notif.remove();
+    show(title, message, type = 'info', duration = 5000) {
+        try {
+            const container = this.createContainer();
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.setAttribute('role', 'alert');
+            notification.setAttribute('aria-live', 'polite');
+            
+            const icon = {
+                'success': '✓',
+                'error': '✕',
+                'warning': '⚠',
+                'info': 'ℹ'
+            }[type] || 'ℹ';
+
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'notification-close';
+            closeBtn.innerHTML = '×';
+            closeBtn.setAttribute('aria-label', 'Close notification');
+            closeBtn.addEventListener('click', () => this.closeNotification(notification));
+
+            notification.innerHTML = `
+                <div class="notification-icon">${icon}</div>
+                <div class="notification-content">
+                    <div class="notification-title">${this.escapeHtml(title)}</div>
+                    <div class="notification-message">${this.escapeHtml(message)}</div>
+                </div>
+            `;
+            
+            notification.appendChild(closeBtn);
+
+            // Add to top
+            if (container.firstChild) {
+                container.insertBefore(notification, container.firstChild);
+            } else {
+                container.appendChild(notification);
             }
-            this.notifications = this.notifications.filter(n => n !== notif);
-        }, 300);
+
+            // Add fade-in animation
+            requestAnimationFrame(() => {
+                notification.classList.add('fade-in');
+            });
+
+            this.notifications.push(notification);
+            this.notificationStack.push({
+                title,
+                message,
+                type,
+                timestamp: new Date()
+            });
+
+            // Remove oldest if exceeds max
+            if (this.notifications.length > this.maxNotifications) {
+                const oldest = this.notifications.shift();
+                this.closeNotification(oldest);
+            }
+
+            // Auto-close after duration
+            if (duration > 0) {
+                const timeoutId = setTimeout(() => {
+                    if (notification.parentElement) {
+                        this.closeNotification(notification);
+                    }
+                }, duration);
+                
+                notification.dataset.timeoutId = timeoutId;
+            }
+
+            return notification;
+        } catch (error) {
+            console.error('Error displaying notification:', error);
+        }
+    }
+
+    closeNotification(element) {
+        try {
+            const notif = element instanceof HTMLElement ? element : element?.parentElement;
+            if (!notif || !notif.parentElement) return;
+            
+            // Clear timeout if exists
+            if (notif.dataset.timeoutId) {
+                clearTimeout(parseInt(notif.dataset.timeoutId));
+            }
+            
+            notif.classList.add('fade-out');
+            notif.classList.remove('fade-in');
+            
+            setTimeout(() => {
+                if (notif.parentElement) {
+                    notif.remove();
+                }
+                this.notifications = this.notifications.filter(n => n !== notif);
+            }, 300);
+        } catch (error) {
+            console.error('Error closing notification:', error);
+        }
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    clearAll() {
+        this.notifications.forEach(notif => this.closeNotification(notif));
+        this.notifications = [];
     }
 }
 
 let realtimeNotificationManager;
-const hasNumber = /\d/;
 
 // ===== CONTENT MODERATION SYSTEM =====
 const ContentModerator = {
@@ -219,96 +274,63 @@ const ContentModerator = {
   'estafa',
 
   // =========================
-  // Suspicious Links / Contact Leakage (optional but useful)
+  // Suspicious Links / Contact Leakage
   // =========================
   'http://', 'https://', 'www.',
   '.com', '.net', '.org',
   '@gmail', '@yahoo', '@hotmail',
-  //number 
-  hasNumber
 ],
 
-    // Specific strict filters (any match = auto-reject)
     strictFilters: [
-    // =========================
-  // Violence / Harm / Threats
-  // =========================
-  'hate', 'kill', 'killing', 'suicide', 'selfharm', 'self-harm',
-  'abuse', 'violence', 'violent', 'harm', 'hurting', 'death',
-  'dead', 'die', 'dying',
-  'threat', 'threaten', 'attack', 'attacking',
-  'rape', 'raped', 'raping',
-  'assault', 'murder', 'murdered',
-  'terrorist', 'terrorism',
-  'bomb', 'explosive', 'explosion',
-  'gun', 'firearm', 'shoot', 'shooting',
-  'stab', 'stabbing',
-  'patay', 'saksak', 'baril', 'patayin', 'mamatay', 'pumatay',
-  'bugbog', 'away', 'suntok',
-
-  // =========================
-  // Hate Speech / Discrimination
-  // =========================
-  'racist', 'racism', 'discrimination',
-  'slur', 'homophobic', 'sexist',
-  'nigger', 'chink', 'spic', 'fag', 'retard',
-
-  'bobo', 'tanga', 'ulol', 'gago', 'inutil', 'tarantado',
-  'lintik', 'hayop', 'demonyo', 'hayup',
-
-  // =========================
-  // Sexual / Explicit Content
-  // =========================
-  'explicit', 'porn', 'pornography',
-  'sex', 'sexual', 'nude', 'nudity',
-  'hubad', 'kantot', 'kantutan',
-  'jakol', 'bayag', 'titi', 'pepe', 'puke', 'burat',
-  'masturbate', 'masturbation',
-
-  // =========================
-  // English Profanity
-  // =========================
-  'fuck', 'fucked', 'fucking',
-  'shit', 'bullshit', 'shitty',
-  'damn', 'hell',
-  'bitch', 'bitches',
-  'asshole', 'a-hole',
-  'motherfucker', 'mf',
-  'bastard',
-  'dick', 'cock',
-  'pussy',
-  'slut', 'whore',
-  'crap',
-
-  // =========================
-  // Tagalog / Filipino Profanity
-  // =========================
-  'putangina', 'putang ina', 'puta', 'putaena', 'pota', 'potaena',
-  'gagi', 'gago',
-  'leche', 'bwisit',
-  'pakyu', 'punyeta',
-  'hindot', 'kantutan',
-  'ulol',
-
-  // =========================
-  // Spam / Scam / Fraud / Hack
-  // =========================
-  'scam', 'fraud', 'fake',
-  'spam', 'spammer',
-  'hack', 'hacker', 'hacking',
-  'phishing',
-  'nakaw', 'steal', 'stolen',
-  'loko', 'manloloko',
-  'estafa',
-
-  // =========================
-  // Suspicious Links / Contact Leakage (optional but useful)
-  // =========================
-  'http://', 'https://', 'www.',
-  '.com', '.net', '.org',
-  '@gmail', '@yahoo', '@hotmail',
-  //number
-  hasNumber
+    'hate', 'kill', 'killing', 'suicide', 'selfharm', 'self-harm',
+    'abuse', 'violence', 'violent', 'harm', 'hurting', 'death',
+    'dead', 'die', 'dying',
+    'threat', 'threaten', 'attack', 'attacking',
+    'rape', 'raped', 'raping',
+    'assault', 'murder', 'murdered',
+    'terrorist', 'terrorism',
+    'bomb', 'explosive', 'explosion',
+    'gun', 'firearm', 'shoot', 'shooting',
+    'stab', 'stabbing',
+    'patay', 'saksak', 'baril', 'patayin', 'mamatay', 'pumatay',
+    'bugbog', 'away', 'suntok',
+    'racist', 'racism', 'discrimination',
+    'slur', 'homophobic', 'sexist',
+    'nigger', 'chink', 'spic', 'fag', 'retard',
+    'bobo', 'tanga', 'ulol', 'gago', 'inutil', 'tarantado',
+    'lintik', 'hayop', 'demonyo', 'hayup',
+    'explicit', 'porn', 'pornography',
+    'sex', 'sexual', 'nude', 'nudity',
+    'hubad', 'kantot', 'kantutan',
+    'jakol', 'bayag', 'titi', 'pepe', 'puke', 'burat',
+    'masturbate', 'masturbation',
+    'fuck', 'fucked', 'fucking',
+    'shit', 'bullshit', 'shitty',
+    'damn', 'hell',
+    'bitch', 'bitches',
+    'asshole', 'a-hole',
+    'motherfucker', 'mf',
+    'bastard',
+    'dick', 'cock',
+    'pussy',
+    'slut', 'whore',
+    'crap',
+    'putangina', 'putang ina', 'puta', 'putaena', 'pota', 'potaena',
+    'gagi', 'gago',
+    'leche', 'bwisit',
+    'pakyu', 'punyeta',
+    'hindot', 'kantutan',
+    'ulol',
+    'scam', 'fraud', 'fake',
+    'spam', 'spammer',
+    'hack', 'hacker', 'hacking',
+    'phishing',
+    'nakaw', 'steal', 'stolen',
+    'loko', 'manloloko',
+    'estafa',
+    'http://', 'https://', 'www.',
+    '.com', '.net', '.org',
+    '@gmail', '@yahoo', '@hotmail',
 ],
 
     suspiciousPatterns: [
@@ -324,7 +346,6 @@ const ContentModerator = {
         const messageLower = message.toLowerCase();
         
         // ===== STRICT FILTER CHECK (Most Important) =====
-        // Check if title contains "fuck" - NOT APPROVED
         if (titleLower.includes('fuck')) {
             return {
                 shouldApprove: false,
@@ -333,7 +354,6 @@ const ContentModerator = {
             };
         }
         
-        // Check if message contains "fuck you" - NOT APPROVED
         if (messageLower.includes('fuck you')) {
             return {
                 shouldApprove: false,
@@ -342,7 +362,6 @@ const ContentModerator = {
             };
         }
         
-        // Check if message contains just "fuck" - NOT APPROVED
         if (messageLower.includes('fuck')) {
             return {
                 shouldApprove: false,
@@ -428,6 +447,7 @@ let allPrayerRequests = [];
 let currentEditingMemberEmail = null;
 let allRegistrations = [];
 let prayerRequestListener = null;
+let currentAdminEmail = '';
 
 // Check if user is admin on page load
 document.addEventListener('DOMContentLoaded', async function() {
@@ -468,6 +488,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Setup real-time listener for prayer requests
         setupRealtimePrayerListener();
 
+        // Setup real-time auto-approval processor
+        setupAutoApprovalProcessor();
+
         document.getElementById('editMemberModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeEditModal();
@@ -480,14 +503,51 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
+// ===== AUTO-APPROVAL PROCESSOR (Works even when dashboard is closed) =====
+function setupAutoApprovalProcessor() {
+    // Listen to pending prayers and auto-approve clean ones
+    // This runs on ALL prayer requests in real-time
+    db.collection('prayerRequests')
+        .where('status', '==', 'pending')
+        .onSnapshot(async (snapshot) => {
+            for (const doc of snapshot.docs) {
+                const data = doc.data();
+                
+                // Skip if already processed
+                if (data.isAutoApproved || data.status !== 'pending') {
+                    continue;
+                }
+
+                // Validate content
+                const validation = ContentModerator.validateContent(data.title, data.message);
+                
+                if (validation.shouldApprove && !data.isAutoApproved) {
+                    try {
+                        await doc.ref.update({
+                            status: 'approved',
+                            approvedAt: new Date(),
+                            approvedBy: 'SYSTEM_AUTO',
+                            isAutoApproved: true,
+                            autoApprovedAt: new Date()
+                        });
+                        
+                        console.log('✅ Auto-approved prayer:', data.title);
+                    } catch (error) {
+                        console.error('Error auto-approving prayer:', error);
+                    }
+                }
+            }
+        }, (error) => {
+            console.error('Error in auto-approval processor:', error);
+        });
+}
+
 // ===== REAL-TIME LISTENER FOR PRAYERS =====
 function setupRealtimePrayerListener() {
-    // Remove old listener if exists
     if (prayerRequestListener) {
         prayerRequestListener();
     }
 
-    // Setup real-time listener
     prayerRequestListener = db.collection('prayerRequests')
         .orderBy('createdAt', 'desc')
         .onSnapshot((snapshot) => {
@@ -513,8 +573,9 @@ function setupRealtimePrayerListener() {
                     
                     // Show notification for status change
                     if (data.status === 'approved') {
+                        const approvalType = data.isAutoApproved ? '🤖 Auto-Approved' : '✓ Approved';
                         realtimeNotificationManager.show(
-                            '✓ Prayer Approved',
+                            approvalType,
                             `"${data.title}" is now approved`,
                             'success',
                             5000
@@ -540,10 +601,18 @@ function setupRealtimePrayerListener() {
                 }
             });
 
-            // Reload prayer requests
-            loadPrayerRequests();
+            // Reload prayer requests if dashboard is visible
+            if (!document.hidden) {
+                loadPrayerRequests();
+            }
         }, (error) => {
             console.error('Error setting up real-time listener:', error);
+            realtimeNotificationManager.show(
+                '⚠️ Connection Error',
+                'Lost connection to prayer request updates',
+                'warning',
+                5000
+            );
         });
 }
 
@@ -666,7 +735,7 @@ async function openEditModal(email) {
         const userSnapshot = await db.collection('users').where('email', '==', email).get();
         
         if (userSnapshot.empty) {
-            alert('User not found');
+            realtimeNotificationManager.show('Error', 'User not found', 'error', 4000);
             return;
         }
 
@@ -688,7 +757,7 @@ async function openEditModal(email) {
         document.body.style.overflow = 'hidden';
     } catch (error) {
         console.error('Error opening edit modal:', error);
-        alert('Error loading member data: ' + error.message);
+        realtimeNotificationManager.show('Error', 'Error loading member data: ' + error.message, 'error', 4000);
     }
 }
 
@@ -790,7 +859,7 @@ async function saveEditedMember(event) {
         const userSnapshot = await db.collection('users').where('email', '==', currentEditingMemberEmail).get();
         
         if (userSnapshot.empty) {
-            alert('User not found');
+            realtimeNotificationManager.show('Error', 'User not found', 'error', 4000);
             submitBtn.disabled = false;
             submitBtn.textContent = 'Save Changes';
             return;
@@ -827,7 +896,7 @@ async function saveEditedMember(event) {
             }
         }
 
-        showSuccessMessage('✓ Member information updated successfully!');
+        realtimeNotificationManager.show('✓ Success', 'Member information updated successfully!', 'success', 5000);
         closeEditModal();
         await loadRegistrations();
         await loadMembers();
@@ -835,7 +904,7 @@ async function saveEditedMember(event) {
 
     } catch (error) {
         console.error('Error saving member:', error);
-        alert('Error saving changes: ' + error.message);
+        realtimeNotificationManager.show('✗ Error', 'Error saving changes: ' + error.message, 'error', 5000);
         submitBtn.disabled = false;
         submitBtn.textContent = 'Save Changes';
     }
@@ -1106,7 +1175,7 @@ async function approveAndStore(id, data, isAutoApproved = false) {
             await db.collection('prayerRequests').doc(id).update({
                 status: 'approved',
                 approvedAt: new Date(),
-                approvedBy: isAutoApproved ? 'SYSTEM' : currentAdminEmail,
+                approvedBy: isAutoApproved ? 'SYSTEM_AUTO' : currentAdminEmail,
                 isAutoApproved: isAutoApproved
             });
         }
@@ -1124,10 +1193,9 @@ async function approvePrayerRequest(id) {
             approvedBy: currentAdminEmail,
             isAutoApproved: false
         });
-        // Real-time listener will handle the update
     } catch (error) {
         console.error('Error approving prayer request:', error);
-        alert('Error approving prayer request: ' + error.message);
+        realtimeNotificationManager.show('✗ Error', 'Error approving prayer request: ' + error.message, 'error', 4000);
     }
 }
 
@@ -1143,10 +1211,9 @@ async function declinePrayerRequest(id) {
             declinedBy: currentAdminEmail,
             declineReason: reason || ''
         });
-        // Real-time listener will handle the update
     } catch (error) {
         console.error('Error declining prayer request:', error);
-        alert('Error declining prayer request: ' + error.message);
+        realtimeNotificationManager.show('✗ Error', 'Error declining prayer request: ' + error.message, 'error', 4000);
     }
 }
 
@@ -1156,34 +1223,10 @@ async function deletePrayerRequest(id) {
 
     try {
         await db.collection('prayerRequests').doc(id).delete();
-        // Real-time listener will handle the update
     } catch (error) {
         console.error('Error deleting prayer request:', error);
-        alert('Error deleting prayer request: ' + error.message);
+        realtimeNotificationManager.show('✗ Error', 'Error deleting prayer request: ' + error.message, 'error', 4000);
     }
-}
-
-// Show Success Message
-function showSuccessMessage(message) {
-    const msg = document.createElement('div');
-    msg.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #d1fae5;
-        border-left: 4px solid var(--success-green);
-        color: #065f46;
-        padding: 15px;
-        border-radius: 8px;
-        z-index: 1000;
-        font-weight: 600;
-    `;
-    msg.textContent = message;
-    document.body.appendChild(msg);
-    
-    setTimeout(() => {
-        msg.remove();
-    }, 3000);
 }
 
 // Load Links
@@ -1275,7 +1318,7 @@ function toggleSelectAll(checkbox) {
 async function makeAdminSelected() {
     const checkedBoxes = document.querySelectorAll('.memberCheckbox:checked');
     if (checkedBoxes.length === 0) {
-        alert('Please select at least one member');
+        realtimeNotificationManager.show('⚠️ Warning', 'Please select at least one member', 'warning', 4000);
         return;
     }
 
@@ -1290,7 +1333,7 @@ async function makeAdminSelected() {
         }
     }
 
-    alert(`${checkedBoxes.length} member(s) promoted to admin`);
+    realtimeNotificationManager.show('✓ Success', `${checkedBoxes.length} member(s) promoted to admin`, 'success', 4000);
     document.getElementById('selectAllCheckbox').checked = false;
     await loadMembers();
 }
@@ -1299,7 +1342,7 @@ async function makeAdminSelected() {
 async function deleteSelected() {
     const checkedBoxes = document.querySelectorAll('.memberCheckbox:checked');
     if (checkedBoxes.length === 0) {
-        alert('Please select at least one member');
+        realtimeNotificationManager.show('⚠️ Warning', 'Please select at least one member', 'warning', 4000);
         return;
     }
 
@@ -1314,12 +1357,10 @@ async function deleteSelected() {
         }
     }
 
-    alert(`${checkedBoxes.length} member(s) deleted`);
+    realtimeNotificationManager.show('✓ Success', `${checkedBoxes.length} member(s) deleted`, 'success', 4000);
     document.getElementById('selectAllCheckbox').checked = false;
     await loadMembers();
 }
-
-let currentAdminEmail = '';
 
 // Send Announcement
 async function sendAnnouncement(e) {
@@ -1330,7 +1371,7 @@ async function sendAnnouncement(e) {
     const sendTo = document.getElementById('sendTo').value;
 
     if (!title || !message || !sendTo) {
-        alert('Please fill in all fields');
+        realtimeNotificationManager.show('⚠️ Error', 'Please fill in all fields', 'error', 4000);
         return;
     }
 
@@ -1343,7 +1384,7 @@ async function sendAnnouncement(e) {
     } else if (sendTo === 'selected') {
         recipients = selectedMembers;
         if (recipients.length === 0) {
-            alert('Please select at least one member');
+            realtimeNotificationManager.show('⚠️ Error', 'Please select at least one member', 'error', 4000);
             return;
         }
     }
@@ -1360,9 +1401,7 @@ async function sendAnnouncement(e) {
             senderEmail: currentAdminEmail
         });
 
-        const successMsg = document.getElementById('successMessage');
-        successMsg.textContent = `✓ Announcement saved successfully!`;
-        successMsg.classList.add('show');
+        realtimeNotificationManager.show('✓ Success', `Announcement saved successfully!`, 'success', 5000);
 
         document.getElementById('announcementTitle').value = '';
         document.getElementById('announcementMessage').value = '';
@@ -1370,14 +1409,10 @@ async function sendAnnouncement(e) {
         selectedMembers = [];
         document.querySelectorAll('#memberCheckboxes input').forEach(cb => cb.checked = false);
 
-        setTimeout(() => {
-            successMsg.classList.remove('show');
-        }, 5000);
-
         await loadAnnouncements();
     } catch (error) {
         console.error('Error saving announcement:', error);
-        alert('Error saving announcement: ' + error.message);
+        realtimeNotificationManager.show('✗ Error', 'Error saving announcement: ' + error.message, 'error', 5000);
     }
 }
 
@@ -1390,7 +1425,7 @@ async function addLink(e) {
     const description = document.getElementById('linkDescription').value;
 
     if (!title || !url) {
-        alert('Please fill in all required fields');
+        realtimeNotificationManager.show('⚠️ Error', 'Please fill in all required fields', 'error', 4000);
         return;
     }
 
@@ -1405,25 +1440,19 @@ async function addLink(e) {
             createdBy: currentAdminEmail
         });
 
-        const successMsg = document.getElementById('linkSuccessMessage');
-        successMsg.textContent = `✓ Link added successfully!`;
-        successMsg.classList.add('show');
+        realtimeNotificationManager.show('✓ Success', `Link added successfully!`, 'success', 4000);
 
         document.getElementById('linkTitle').value = '';
         document.getElementById('linkUrl').value = '';
         document.getElementById('linkDescription').value = '';
 
-        setTimeout(() => {
-            successMsg.classList.remove('show');
-        }, 5000);
-
         await loadLinks();
     } catch (error) {
         if (error instanceof TypeError) {
-            alert('Please enter a valid URL');
+            realtimeNotificationManager.show('✗ Error', 'Please enter a valid URL', 'error', 4000);
         } else {
             console.error('Error adding link:', error);
-            alert('Error adding link: ' + error.message);
+            realtimeNotificationManager.show('✗ Error', 'Error adding link: ' + error.message, 'error', 4000);
         }
     }
 }
@@ -1437,16 +1466,16 @@ async function deleteLink(id) {
         await loadLinks();
     } catch (error) {
         console.error('Error deleting link:', error);
-        alert('Error deleting link: ' + error.message);
+        realtimeNotificationManager.show('✗ Error', 'Error deleting link: ' + error.message, 'error', 4000);
     }
 }
 
 // Copy to Clipboard
 function copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(() => {
-        alert('Link copied to clipboard!');
+        realtimeNotificationManager.show('✓ Success', 'Link copied to clipboard!', 'success', 3000);
     }).catch(() => {
-        alert('Failed to copy link');
+        realtimeNotificationManager.show('✗ Error', 'Failed to copy link', 'error', 4000);
     });
 }
 
@@ -1465,10 +1494,11 @@ async function deleteAnnouncement(id) {
 // Logout
 function logout() {
     if (confirm('Are you sure you want to logout?')) {
-        // Clean up real-time listener
+        // Clean up real-time listeners
         if (prayerRequestListener) {
             prayerRequestListener();
         }
+        realtimeNotificationManager.clearAll();
         StorageManager.removeItem('currentUser');
         window.location.href = 'index.html';
     }
