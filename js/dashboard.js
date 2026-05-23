@@ -224,7 +224,7 @@ const ContentModerator = {
   '.com', '.net', '.org',
   '@gmail', '@yahoo', '@hotmail',
   //number 
-  '1','2','3','4','5','6','7','8','9','0'
+  1,2,3,4,5,6,7,8,9,0
 ],
 
     // Specific strict filters (any match = auto-reject)
@@ -307,7 +307,7 @@ const ContentModerator = {
   '.com', '.net', '.org',
   '@gmail', '@yahoo', '@hotmail',
   //number
-  '1','2','3','4','5','6','7','8','9','0'
+  1,2,3,4,5,6,7,8,9,0
 ],
 
     suspiciousPatterns: [
