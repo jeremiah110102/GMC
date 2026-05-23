@@ -5,6 +5,141 @@ let previousAnnouncementCount = 0;
 let previousPrayerCount = 0;
 let previousResourceCount = 0;
 
+// ===== NOTIFICATION SYSTEM - REAL TIME =====
+class NotificationManager {
+    constructor() {
+        this.notifications = [];
+        this.container = null;
+        this.maxNotifications = 3; // Show max 3 notifications at once
+        this.recentTitles = {}; // Track recently shown titles to avoid duplicates
+        this.recentTitleTimeout = 2000; // 2 second timeout for duplicate prevention
+    }
+
+    ensureContainer() {
+        if (!this.container) {
+            this.container = document.getElementById('notificationContainer');
+        }
+        return this.container;
+    }
+
+    show(title, message, type = 'info', duration = 5000) {
+        const container = this.ensureContainer();
+        if (!container) return;
+
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        
+        const icon = {
+            'success': '✓',
+            'info': 'ℹ',
+            'warning': '⚠'
+        }[type] || 'ℹ';
+
+        // Truncate long messages
+        let displayMessage = message;
+        if (displayMessage.length > 150) {
+            displayMessage = displayMessage.substring(0, 150) + '...';
+        }
+
+        notification.innerHTML = `
+            <div class="notification-icon">${icon}</div>
+            <div class="notification-content">
+                <div class="notification-title">${title}</div>
+                <div class="notification-message">${displayMessage}</div>
+            </div>
+            <button class="notification-close" onclick="notificationManager.closeNotification(this)">×</button>
+        `;
+
+        // Add to top of container
+        if (container.firstChild) {
+            container.insertBefore(notification, container.firstChild);
+        } else {
+            container.appendChild(notification);
+        }
+
+        // Add to tracking array
+        this.notifications.push({
+            element: notification,
+            type: type,
+            title: title,
+            createdAt: Date.now()
+        });
+
+        // Remove oldest notification if max reached
+        if (this.notifications.length > this.maxNotifications) {
+            const oldest = this.notifications.shift();
+            if (oldest.element && oldest.element.parentElement) {
+                oldest.element.classList.add('fade-out');
+                setTimeout(() => {
+                    if (oldest.element.parentElement) {
+                        oldest.element.remove();
+                    }
+                }, 300);
+            }
+        }
+
+        // Auto-remove after duration
+        if (duration > 0) {
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    this.closeNotification(notification);
+                }
+            }, duration);
+        }
+
+        return notification;
+    }
+
+    closeNotification(element) {
+        const notif = element instanceof HTMLElement ? element : element.parentElement;
+        if (!notif || !notif.parentElement) return;
+        
+        notif.classList.add('fade-out');
+        setTimeout(() => {
+            if (notif.parentElement) {
+                notif.remove();
+            }
+            this.notifications = this.notifications.filter(n => n.element !== notif);
+        }, 300);
+    }
+
+    // Check if title was recently shown (within timeout period)
+    isDuplicateRecent(title) {
+        if (this.recentTitles[title]) {
+            const timeSince = Date.now() - this.recentTitles[title];
+            if (timeSince < this.recentTitleTimeout) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Show notification avoiding near-duplicates
+    showOnce(title, message, type = 'info', duration = 5000) {
+        if (this.isDuplicateRecent(title)) {
+            return null; // Skip duplicate
+        }
+
+        // Mark this title as recently shown
+        this.recentTitles[title] = Date.now();
+
+        // Clean up old recent title records
+        Object.keys(this.recentTitles).forEach(key => {
+            if (Date.now() - this.recentTitles[key] > this.recentTitleTimeout * 2) {
+                delete this.recentTitles[key];
+            }
+        });
+
+        return this.show(title, message, type, duration);
+    }
+}
+
+// Initialize notification manager globally
+let notificationManager;
+document.addEventListener('DOMContentLoaded', function() {
+    notificationManager = new NotificationManager();
+});
+
 // ===== MOBILE MENU INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', function() {
     initializeMobileMenu();
@@ -113,37 +248,6 @@ function initializeMobileMenu() {
     console.log('✅ Mobile menu initialized successfully');
 }
 
-// ===== NOTIFICATION SYSTEM =====
-function showNotification(title, message, type = 'info', duration = 5000) {
-    const container = document.getElementById('notificationContainer');
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    
-    const icon = {
-        'success': '✓',
-        'info': 'ℹ',
-        'warning': '⚠'
-    }[type] || 'ℹ';
-
-    notification.innerHTML = `
-        <div class="notification-icon">${icon}</div>
-        <div class="notification-content">
-            <div class="notification-title">${title}</div>
-            <div class="notification-message">${message}</div>
-        </div>
-        <button class="notification-close" onclick="this.parentElement.remove();">×</button>
-    `;
-
-    container.appendChild(notification);
-
-    if (duration > 0) {
-        setTimeout(() => {
-            notification.classList.add('fade-out');
-            setTimeout(() => notification.remove(), 300);
-        }, duration);
-    }
-}
-
 // ===== AUTHENTICATION & INITIALIZATION =====
 // Check if user is logged in (non-admin)
 document.addEventListener('DOMContentLoaded', async function() {
@@ -186,29 +290,49 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 // ===== AUTO-REFRESH SYSTEM =====
-// Auto-refresh with notifications
+// Auto-refresh with real-time notifications (check every 3 seconds)
 function setUpAutoRefresh() {
     setInterval(async () => {
         await checkForNewAnnouncements();
         await checkForNewPrayers();
         await checkForNewResources();
-    }, 1000); // Check every 30 seconds
+    }, 3000); // Check every 3 seconds for real-time updates
 }
 
-// Check for new announcements
+// Check for new announcements and show real-time notification
 async function checkForNewAnnouncements() {
     try {
         const snapshot = await db.collection('announcements').orderBy('createdAt', 'desc').get();
         const count = snapshot.size;
         
         if (previousAnnouncementCount > 0 && count > previousAnnouncementCount) {
+            // Get new announcements (those added since last check)
             const newCount = count - previousAnnouncementCount;
-            showNotification(
-                '📢 New Announcements',
-                `You have ${newCount} new announcement${newCount > 1 ? 's' : ''}!`,
-                'info',
-                5000
-            );
+            const newAnnouncements = [];
+            
+            snapshot.docs.slice(0, newCount).forEach(doc => {
+                newAnnouncements.push(doc.data());
+            });
+
+            // Show notification for each new announcement
+            newAnnouncements.reverse().forEach((announcement, idx) => {
+                setTimeout(() => {
+                    const shortMessage = announcement.message.substring(0, 100);
+                    notificationManager.show(
+                        '📢 ' + announcement.title,
+                        shortMessage + (announcement.message.length > 100 ? '...' : ''),
+                        'info',
+                        5000
+                    );
+                }, idx * 400); // Stagger notifications
+            });
+            
+            // Reload announcements if on that section
+            const announcementsSection = document.getElementById('announcementsSection');
+            if (announcementsSection && announcementsSection.classList.contains('active')) {
+                await loadAnnouncements(currentUserEmail);
+            }
+            
             previousAnnouncementCount = count;
         } else if (previousAnnouncementCount === 0) {
             previousAnnouncementCount = count;
@@ -218,20 +342,43 @@ async function checkForNewAnnouncements() {
     }
 }
 
-// Check for new prayers
+// Check for new accepted prayer requests and show real-time notification
 async function checkForNewPrayers() {
     try {
-        const snapshot = await db.collection('prayerRequests').get();
+        const snapshot = await db.collection('prayerRequests')
+            .where('status', '==', 'approved')
+            .orderBy('approvedAt', 'desc')
+            .get();
         const count = snapshot.size;
         
         if (previousPrayerCount > 0 && count > previousPrayerCount) {
-            const newCount = count - previousPrayerCount;
-            showNotification(
-                '🙏 New Prayer Requests',
-                `${newCount} new prayer request${newCount > 1 ? 's' : ''} in the community!`,
-                'info',
-                5000
-            );
+            const newPrayerCount = count - previousPrayerCount;
+            const newPrayers = [];
+            
+            snapshot.docs.slice(0, newPrayerCount).forEach(doc => {
+                newPrayers.push(doc.data());
+            });
+
+            // Show notification for each new approved prayer
+            newPrayers.reverse().forEach((prayer, idx) => {
+                setTimeout(() => {
+                    const submitterDisplay = prayer.isAnonymous ? '🔒 Anonymous' : `👤 ${prayer.submitterName}`;
+                    const shortMessage = prayer.message.substring(0, 80);
+                    notificationManager.show(
+                        '🙏 ' + prayer.title,
+                        `${submitterDisplay} • ${shortMessage}${prayer.message.length > 80 ? '...' : ''}`,
+                        'success',
+                        5000
+                    );
+                }, idx * 400); // Stagger notifications
+            });
+            
+            // Reload active requests if on that section
+            const activeSection = document.getElementById('activeRequestsSection');
+            if (activeSection && activeSection.classList.contains('active')) {
+                await loadActiveRequests();
+            }
+            
             previousPrayerCount = count;
         } else if (previousPrayerCount === 0) {
             previousPrayerCount = count;
@@ -241,20 +388,41 @@ async function checkForNewPrayers() {
     }
 }
 
-// Check for new resources
+// Check for new resources and show real-time notification
 async function checkForNewResources() {
     try {
-        const snapshot = await db.collection('links').get();
+        const snapshot = await db.collection('links').orderBy('createdAt', 'desc').get();
         const count = snapshot.size;
         
         if (previousResourceCount > 0 && count > previousResourceCount) {
-            const newCount = count - previousResourceCount;
-            showNotification(
-                '🔗 New Resources',
-                `${newCount} new resource${newCount > 1 ? 's' : ''} added!`,
-                'success',
-                5000
-            );
+            const newResourceCount = count - previousResourceCount;
+            const newResources = [];
+            
+            snapshot.docs.slice(0, newResourceCount).forEach(doc => {
+                newResources.push(doc.data());
+            });
+
+            // Show notification for each new resource
+            newResources.reverse().forEach((resource, idx) => {
+                setTimeout(() => {
+                    const description = resource.description 
+                        ? resource.description.substring(0, 85) 
+                        : 'New church resource added';
+                    notificationManager.show(
+                        '🔗 ' + resource.title,
+                        description + (description.length >= 85 ? '...' : ''),
+                        'success',
+                        5000
+                    );
+                }, idx * 400); // Stagger notifications
+            });
+            
+            // Reload resources if on that section
+            const linksSection = document.getElementById('linksSection');
+            if (linksSection && linksSection.classList.contains('active')) {
+                await loadResources();
+            }
+            
             previousResourceCount = count;
         } else if (previousResourceCount === 0) {
             previousResourceCount = count;
@@ -400,7 +568,7 @@ async function updateProfile(e) {
         document.getElementById('userName').textContent = firstName + ' ' + lastName;
         document.getElementById('firstName').textContent = firstName;
 
-        showNotification('✓ Success', 'Profile updated successfully!', 'success', 4000);
+        notificationManager.show('✓ Success', 'Profile updated successfully!', 'success', 4000);
 
         const successMsg = document.getElementById('editSuccessMessage');
         successMsg.textContent = '✓ Profile updated successfully!';
@@ -414,7 +582,7 @@ async function updateProfile(e) {
         populateProfileView();
     } catch (error) {
         console.error('Error updating profile:', error);
-        showNotification('✗ Error', 'Failed to update profile: ' + error.message, 'warning', 5000);
+        notificationManager.show('✗ Error', 'Failed to update profile: ' + error.message, 'warning', 5000);
     }
 }
 
@@ -462,7 +630,6 @@ async function loadAnnouncements(userEmail) {
         visibleAnnouncements.forEach((announcement, index) => {
             const createdDate = new Date(announcement.createdAt?.toDate?.() || new Date());
             const formattedDate = createdDate.toLocaleDateString();
-            const formattedTime = createdDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
             const sendToLabel = announcement.sendTo === 'all' ? 'Everyone' : 
                                announcement.sendTo === 'active' ? 'Active Members Only' : 
@@ -478,7 +645,6 @@ async function loadAnnouncements(userEmail) {
                         <div class="card-content">${announcement.message}</div>
                         <div class="card-meta">
                             <div class="card-meta-item">📅 ${formattedDate}</div>
-                            <div class="card-meta-item">🕐 ${formattedTime}</div>
                             <div class="card-meta-item">👥 ${sendToLabel}</div>
                         </div>
                     </div>
@@ -715,7 +881,7 @@ async function submitPrayerRequest(e) {
             status: 'pending'
         });
 
-        showNotification('🙏 Prayer Submitted', 'Your prayer request has been submitted!', 'success', 4000);
+        notificationManager.show('🙏 Prayer Submitted', 'Your prayer request has been submitted!', 'success', 4000);
 
         const successMsg = document.getElementById('prayerSuccessMessage');
         successMsg.textContent = '✓ Prayer request submitted successfully!';
@@ -732,7 +898,7 @@ async function submitPrayerRequest(e) {
         await loadPrayerRequests();
     } catch (error) {
         console.error('Error submitting prayer request:', error);
-        showNotification('✗ Error', 'Failed to submit prayer request', 'warning', 5000);
+        notificationManager.show('✗ Error', 'Failed to submit prayer request', 'warning', 5000);
     }
 }
 
