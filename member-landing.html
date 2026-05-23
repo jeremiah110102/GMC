@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grace Mission Church - Member Portal</title>
+    <link rel="stylesheet" href="css/member.css">
+    <style>
+        /* Notification System */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            max-width: 400px;
+        }
+
+        .notification {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(0, 31, 63, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideInRight 0.3s ease;
+            border-left: 4px solid var(--secondary-navy);
+        }
+
+        .notification.success {
+            border-left-color: var(--success-green);
+        }
+
+        .notification.info {
+            border-left-color: var(--secondary-navy);
+        }
+
+        .notification.warning {
+            border-left-color: var(--accent-gold);
+        }
+
+        .notification-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            color: var(--primary-navy);
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .notification-message {
+            color: var(--text-light);
+            font-size: 12px;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: var(--text-light);
+            padding: 0;
+            transition: all 0.3s ease;
+        }
+
+        .notification-close:hover {
+            color: var(--primary-navy);
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+        }
+
+        .notification.fade-out {
+            animation: slideOutRight 0.3s ease;
+        }
+
+        /* Card Enhancement */
+        .announcement-card,
+        .prayer-card,
+        .resource-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0, 31, 63, 0.08);
+            border: 1px solid var(--border-light);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeInUp 0.4s ease backwards;
+        }
+
+        .announcement-card:hover,
+        .prayer-card:hover,
+        .resource-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 31, 63, 0.12);
+            border-color: var(--secondary-navy);
+        }
+
+        .announcement-card {
+            border-left: 4px solid var(--secondary-navy);
+        }
+
+        .prayer-card {
+            border-left: 4px solid var(--accent-gold);
+        }
+
+        .prayer-card.approved {
+            border-left-color: var(--success-green);
+            background: #f0fdf4;
+        }
+
+        .resource-card {
+            border-left: 4px solid var(--secondary-navy);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .card-title {
+            color: var(--primary-navy);
+            font-weight: 700;
+            font-size: 16px;
+            margin: 0;
+            flex: 1;
+        }
+
+        .card-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: var(--accent-gold);
+            color: white;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+            margin-left: 10px;
+        }
+
+        .card-badge.approved {
+            background: var(--success-green);
+        }
+
+        .card-badge.your-prayer {
+            background: var(--secondary-navy);
+        }
+
+        .card-body {
+            margin-bottom: 12px;
+        }
+
+        .card-content {
+            color: var(--text-dark);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .card-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .card-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .card-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .resource-link-btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, var(--accent-gold), var(--dark-gold));
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .resource-link-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- Notification System -->
+    <div class="notification-container" id="notificationContainer"></div>
+
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">⛪</div>
+            <div class="sidebar-title">Grace Mission</div>
+            <div class="sidebar-subtitle">Member Portal</div>
+        </div>
+
+        <ul class="sidebar-nav">
+            <li><a onclick="showSection('homeSection')" class="nav-link active"><span>🏠</span> Home</a></li>
+            <li><a onclick="showSection('dashboardSection')" class="nav-link"><span>📊</span> Dashboard</a></li>
+            <li><a onclick="showSection('announcementsSection')" class="nav-link"><span>📢</span> Announcements</a></li>
+            <li><a onclick="showSection('activeRequestsSection')" class="nav-link"><span>✅</span> Active Requests</a></li>
+            <li><a onclick="showSection('prayerSection')" class="nav-link"><span>🙏</span> Prayer Requests</a></li>
+            <li><a onclick="showSection('profileSection')" class="nav-link"><span>👤</span> My Profile</a></li>
+            <li><a onclick="showSection('editProfileSection')" class="nav-link"><span>✏️</span> Edit Profile</a></li>
+            <li><a onclick="showSection('linksSection')" class="nav-link"><span>🔗</span> Resources</a></li>
+        </ul>
+
+        <div class="sidebar-divider"></div>
+
+        <ul class="sidebar-nav">
+            <li><a onclick="logout()" class="nav-link"><span>🚪</span> Logout</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Header -->
+        <div class="top-header">
+            <div class="header-left">
+                <h1>Grace Mission Church</h1>
+                <p id="currentSection">Member Portal</p>
+            </div>
+            <div class="header-right">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">M</div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName">Member</div>
+                        <div class="user-role">Member</div>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- Home Section -->
+            <div id="homeSection" class="section active">
+                <div class="welcome-banner">
+                    <h2>Welcome, <span id="firstName">Member</span>! 👋</h2>
+                    <p>Welcome to Grace Mission Church Member Portal. Explore announcements, share prayer requests, and stay connected with our community.</p>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="dashboard-card" onclick="showSection('dashboardSection')">
+                        <div class="card-icon">📊</div>
+                        <h3>Dashboard</h3>
+                        <p>View your membership status and church statistics.</p>
+                    </div>
+
+                    <div class="dashboard-card" onclick="showSection('announcementsSection')">
+                        <div class="card-icon">📢</div>
+                        <h3>Announcements</h3>
+                        <p>Check the latest church announcements and news.</p>
+                    </div>
+
+                    <div class="dashboard-card" onclick="showSection('activeRequestsSection')">
+                        <div class="card-icon">✅</div>
+                        <h3>Active Requests</h3>
+                        <p>View approved community prayer requests.</p>
+                    </div>
+
+                    <div class="dashboard-card" onclick="showSection('prayerSection')">
+                        <div class="card-icon">🙏</div>
+                        <h3>Prayer Requests</h3>
+                        <p>Share and view community prayer requests.</p>
+                    </div>
+
+                    <div class="dashboard-card" onclick="showSection('profileSection')">
+                        <div class="card-icon">👤</div>
+                        <h3>My Profile</h3>
+                        <p>View your membership and contact information.</p>
+                    </div>
+
+                    <div class="dashboard-card" onclick="showSection('editProfileSection')">
+                        <div class="card-icon">✏️</div>
+                        <h3>Edit Profile</h3>
+                        <p>Update your personal information.</p>
+                    </div>
+
+                    <div class="dashboard-card" onclick="showSection('linksSection')">
+                        <div class="card-icon">🔗</div>
+                        <h3>Resources</h3>
+                        <p>Access church links and resources.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Section -->
+            <div id="dashboardSection" class="section">
+                <h2 class="section-title">📊 Dashboard</h2>
+
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <h3>Membership Status</h3>
+                        <div class="profile-item" style="border: none; background: transparent; margin: 0;">
+                            <div class="profile-item-label">Status</div>
+                            <div class="profile-item-value" style="color: var(--success-green);">Active</div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card">
+                        <h3>Membership Type</h3>
+                        <div class="profile-item" style="border: none; background: transparent; margin: 0;">
+                            <div class="profile-item-label">Type</div>
+                            <div class="profile-item-value" id="dashMembershipType">-</div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card">
+                        <h3>Join Date</h3>
+                        <div class="profile-item" style="border: none; background: transparent; margin: 0;">
+                            <div class="profile-item-label">Joined</div>
+                            <div class="profile-item-value" id="dashJoinDate">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <h3>Quick Stats</h3>
+                    <div class="profile-grid">
+                        <div class="profile-item">
+                            <div class="profile-item-label">Email</div>
+                            <div class="profile-item-value" id="dashEmail">-</div>
+                        </div>
+                        <div class="profile-item">
+                            <div class="profile-item-label">Phone</div>
+                            <div class="profile-item-value" id="dashPhone">-</div>
+                        </div>
+                        <div class="profile-item">
+                            <div class="profile-item-label">City</div>
+                            <div class="profile-item-value" id="dashCity">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Announcements Section -->
+            <div id="announcementsSection" class="section">
+                <h2 class="section-title">📢 Church Announcements</h2>
+
+                <div class="content-section">
+                    <div id="announcementsContainer">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <p>Loading announcements...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Prayer Requests Section -->
+            <div id="activeRequestsSection" class="section">
+                <h2 class="section-title">✅ Approved Prayer Requests</h2>
+
+                <div class="content-section">
+                    <h3>Filter Prayer Requests</h3>
+                    <div class="filter-section">
+                        <div class="filter-group">
+                            <label>From Date</label>
+                            <input type="date" id="filterFromDate">
+                        </div>
+                        <div class="filter-group">
+                            <label>To Date</label>
+                            <input type="date" id="filterToDate">
+                        </div>
+                        <button class="filter-btn" onclick="applyDateFilter()">🔍 Filter</button>
+                        <button class="reset-btn" onclick="resetDateFilter()">↺ Reset</button>
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <h3>Approved Community Prayers</h3>
+                    <div id="activeRequestsContainer">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">✅</div>
+                            <p>Loading approved prayer requests...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prayer Requests Section -->
+            <div id="prayerSection" class="section">
+                <h2 class="section-title">🙏 Prayer Requests</h2>
+
+                <div class="content-section">
+                    <h3>Submit Your Prayer Request</h3>
+                    <div class="success-message" id="prayerSuccessMessage"></div>
+
+                    <form onsubmit="submitPrayerRequest(event)" class="form-grid">
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Prayer Request Title</label>
+                            <input type="text" id="prayerTitle" required placeholder="What should we pray about?">
+                        </div>
+
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Prayer Request Details</label>
+                            <textarea id="prayerMessage" required placeholder="Share your prayer request..."></textarea>
+                        </div>
+
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>
+                                <input type="checkbox" id="prayerAnonymous"> Submit Anonymously
+                            </label>
+                        </div>
+
+                        <div style="grid-column: 1 / -1;">
+                            <button type="submit" class="submit-btn">Submit Prayer Request</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="content-section">
+                    <h3>Community Prayer Requests</h3>
+                    <div id="prayerRequestsContainer">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📿</div>
+                            <p>Loading prayer requests...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Section -->
+            <div id="profileSection" class="section">
+                <h2 class="section-title">👤 My Profile</h2>
+
+                <div class="content-section">
+                    <h3>Your Membership Information</h3>
+                    <div class="profile-grid">
+                        <div class="profile-item">
+                            <div class="profile-item-label">First Name</div>
+                            <div class="profile-item-value" id="profFirstName">-</div>
+                        </div>
+                        <div class="profile-item">
+                            <div class="profile-item-label">Last Name</div>
+                            <div class="profile-item-value" id="profLastName">-</div>
+                        </div>
+                        <div class="profile-item">
+                            <div class="profile-item-label">Email</div>
+                            <div class="profile-item-value" id="profEmail">-</div>
+                        </div>
+                        <div class="profile-item">
+                            <div class="profile-item-label">Phone</div>
+                            <div class="profile-item-value" id="profPhone">-</div>
+                        </div>
+                        <div class="profile-item">
+                            <div class="profile-item-label">City</div>
+                            <div class="profile-item-value" id="profCity">-</div>
+                        </div>
+                        <div class="profile-item">
+                            <div class="profile-item-label">Membership Type</div>
+                            <div class="profile-item-value" id="profMembershipType">-</div>
+                        </div>
+                        <div class="profile-item">
+                            <div class="profile-item-label">Join Date</div>
+                            <div class="profile-item-value" id="profJoinDate">-</div>
+                        </div>
+                        <div class="profile-item">
+                            <div class="profile-item-label">Status</div>
+                            <div class="profile-item-value" style="color: var(--success-green);">Active</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Profile Section -->
+            <div id="editProfileSection" class="section">
+                <h2 class="section-title">✏️ Edit Profile</h2>
+
+                <div class="content-section">
+                    <div class="success-message" id="editSuccessMessage"></div>
+
+                    <form onsubmit="updateProfile(event)" class="form-grid">
+                        <div class="form-group">
+                            <label>First Name</label>
+                            <input type="text" id="editFirstName" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Last Name</label>
+                            <input type="text" id="editLastName" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Email (Read-only)</label>
+                            <input type="email" id="editEmail" readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" id="editPhone">
+                        </div>
+
+                        <div class="form-group">
+                            <label>City</label>
+                            <input type="text" id="editCity">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Membership Type (Read-only)</label>
+                            <input type="text" id="editMembershipType" readonly>
+                        </div>
+
+                        <div style="grid-column: 1 / -1;">
+                            <button type="submit" class="submit-btn">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Resources/Links Section -->
+            <div id="linksSection" class="section">
+                <h2 class="section-title">🔗 Church Resources</h2>
+
+                <div class="content-section">
+                    <h3>Important Links</h3>
+                    <div id="resourcesContainer">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📚</div>
+                            <p>Loading resources...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/memberdashboard.js"></script>
+</body>
+</html>

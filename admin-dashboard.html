@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Grace Mission Church</title>
+    <link rel="stylesheet" href="css/dashboard.css">
+  
+    
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">⛪</div>
+            <div class="sidebar-title">Grace Mission</div>
+            <div class="sidebar-subtitle">Admin Portal</div>
+        </div>
+
+        <ul class="sidebar-nav">
+            <li><a href="#" onclick="showSection('dashboard')" class="nav-link active"><span>📊</span> Dashboard</a></li>
+            <li><a href="#" onclick="showSection('members')" class="nav-link"><span>👥</span> Members</a></li>
+            <li><a href="#" onclick="showSection('announcements')" class="nav-link"><span>📢</span> Announcements</a></li>
+            <li><a href="#" onclick="showSection('prayerRequests')" class="nav-link"><span>🙏</span> Prayer Requests</a></li>
+            <li><a href="#" onclick="showSection('links')" class="nav-link"><span>🔗</span> Links</a></li>
+            <li><a href="#" onclick="showSection('registrations')" class="nav-link"><span>📝</span> Registrations</a></li>
+        </ul>
+
+        <div class="sidebar-divider"></div>
+
+        <ul class="sidebar-nav">
+            <li><a href="#" onclick="logout()" class="nav-link"><span>🚪</span> Logout</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Header -->
+        <div class="top-header">
+            <div class="header-left">
+                <h1>Admin Dashboard</h1>
+                <p id="currentSection">Welcome to the admin panel</p>
+            </div>
+            <div class="header-right">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">A</div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName">Admin User</div>
+                        <div class="user-role">Administrator</div>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- Dashboard Section -->
+            <div id="dashboard" class="section active">
+                <h2 style="color: var(--primary-blue); margin-bottom: 20px;">Dashboard Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalMembers">0</div>
+                        <div class="stat-label">Total Members</div>
+                    </div>
+                    <div class="stat-card orange">
+                        <div class="stat-number" id="activeMembers">0</div>
+                        <div class="stat-label">Active Members</div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-number" id="totalRegistrations">0</div>
+                        <div class="stat-label">Registrations</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3>Recent Registrations</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Membership Type</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentRegistrations">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-light);">Loading registrations...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Members Section -->
+            <div id="members" class="section">
+                <h2 style="color: var(--primary-blue); margin-bottom: 20px;">Members Management</h2>
+                
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3>All Members</h3>
+                        <div class="action-buttons">
+                            <button class="action-btn" onclick="makeAdminSelected()">Make Admin</button>
+                            <button class="action-btn danger" onclick="deleteSelected()">Delete</button>
+                        </div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)"></th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>City</th>
+                                <th>Membership Type</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="membersTableBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--text-light);">Loading members...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Announcements Section -->
+            <div id="announcements" class="section">
+                <h2 style="color: var(--primary-blue); margin-bottom: 20px;">Send Announcements</h2>
+                
+                <div class="table-container">
+                    <h3 style="margin-bottom: 20px;">Create New Announcement</h3>
+                    
+                    <div class="success-message" id="successMessage"></div>
+
+                    <form onsubmit="sendAnnouncement(event)">
+                        <div class="form-group">
+                            <label>Announcement Title *</label>
+                            <input type="text" id="announcementTitle" required placeholder="Enter announcement title">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Message *</label>
+                            <textarea id="announcementMessage" required placeholder="Enter your announcement message..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Send To *</label>
+                            <select id="sendTo" required>
+                                <option value="">Select recipients</option>
+                                <option value="all">All Members</option>
+                                <option value="active">Active Members Only</option>
+                                <option value="selected">Selected Members</option>
+                            </select>
+                        </div>
+
+                        <div id="selectedMembersDiv" style="display: none; margin-bottom: 20px;">
+                            <label>Select Members:</label>
+                            <div id="memberCheckboxes" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-light); border-radius: 8px; padding: 15px;">
+                                <!-- Members will be loaded here -->
+                            </div>
+                        </div>
+
+                        <button type="submit" class="submit-btn">Send Announcement</button>
+                    </form>
+                </div>
+
+                <div class="table-container" style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 20px;">Announcement History</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Recipients</th>
+                                <th>Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="announcementsTableBody">
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: var(--text-light);">No announcements yet</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Prayer Requests Section -->
+            <div id="prayerRequests" class="section">
+                <h2 style="color: var(--primary-blue); margin-bottom: 20px;">Prayer Requests Management</h2>
+                
+                <div class="table-container">
+                    <h3 style="margin-bottom: 20px;">Active Prayer Requests</h3>
+                    <div id="prayerRequestsContainer">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📿</div>
+                            <p>Loading prayer requests...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Links Section -->
+            <div id="links" class="section">
+                <h2 style="color: var(--primary-blue); margin-bottom: 20px;">Manage Links</h2>
+                
+                <div class="table-container">
+                    <h3 style="margin-bottom: 20px;">Add New Link</h3>
+                    
+                    <div class="success-message" id="linkSuccessMessage"></div>
+
+                    <form onsubmit="addLink(event)">
+                        <div class="form-group">
+                            <label>Link Title *</label>
+                            <input type="text" id="linkTitle" required placeholder="Enter link title (e.g., YouTube Channel)">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Link URL *</label>
+                            <input type="url" id="linkUrl" required placeholder="Enter full URL (e.g., https://example.com)">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="linkDescription" placeholder="Enter optional description..."></textarea>
+                        </div>
+
+                        <button type="submit" class="submit-btn">Add Link</button>
+                    </form>
+                </div>
+
+                <div class="table-container" style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 20px;">Saved Links</h3>
+                    <div id="linksContainer">
+                        <p style="text-align: center; color: var(--text-light);">No links saved yet</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Registrations Section -->
+            <div id="registrations" class="section">
+                <h2 style="color: var(--primary-blue); margin-bottom: 20px;">New Registrations</h2>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>City</th>
+                                <th>Membership Type</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="registrationsTableBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--text-light);">Loading registrations...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
