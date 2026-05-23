@@ -1,44 +1,126 @@
+// Storage Manager - Handles localStorage, sessionStorage, and in-memory fallback
+const StorageManager = {
+    isLocalStorageAvailable() {
+        try {
+            const test = '__localStorage_test__';
+            localStorage.setItem(test, test);
+            localStorage.removeItem(test);
+            return true;
+        } catch (e) {
+            console.warn('localStorage not available, using fallback storage');
+            return false;
+        }
+    },
+
+    setItem(key, value) {
+        try {
+            if (this.isLocalStorageAvailable()) {
+                localStorage.setItem(key, value);
+            } else {
+                try {
+                    sessionStorage.setItem(key, value);
+                } catch (e) {
+                    window._appStorage = window._appStorage || {};
+                    window._appStorage[key] = value;
+                }
+            }
+        } catch (error) {
+            console.error('Error saving data:', error);
+        }
+    },
+
+    getItem(key) {
+        try {
+            if (this.isLocalStorageAvailable()) {
+                return localStorage.getItem(key);
+            } else {
+                try {
+                    return sessionStorage.getItem(key);
+                } catch (e) {
+                    return (window._appStorage || {})[key] || null;
+                }
+            }
+        } catch (error) {
+            console.error('Error retrieving data:', error);
+            return null;
+        }
+    },
+
+    removeItem(key) {
+        try {
+            if (this.isLocalStorageAvailable()) {
+                localStorage.removeItem(key);
+            } else {
+                try {
+                    sessionStorage.removeItem(key);
+                } catch (e) {
+                    if (window._appStorage) {
+                        delete window._appStorage[key];
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error removing data:', error);
+        }
+    }
+};
+
 let allMembers = [];
 let selectedMembers = [];
 let allAnnouncements = [];
 let allLinks = [];
 let allPrayerRequests = [];
+let currentEditingMemberEmail = null;
+let allRegistrations = [];
 
 // Check if user is admin on page load
 document.addEventListener('DOMContentLoaded', async function() {
-    const currentUser = localStorage.getItem('currentUser');
+    const currentUser = StorageManager.getItem('currentUser');
     
     if (!currentUser) {
         window.location.href = 'index.html';
         return;
     }
 
-    const userData = JSON.parse(currentUser);
-    const isAdmin = userData.isAdmin === true;
-    
-    console.log('User:', userData.email, 'Is Admin:', isAdmin);
+    try {
+        const userData = JSON.parse(currentUser);
+        const isAdmin = userData.isAdmin === true;
+        
+        console.log('User:', userData.email, 'Is Admin:', isAdmin);
 
-    if (!isAdmin) {
-        window.location.href = 'member-landing.html';
-        return;
+        if (!isAdmin) {
+            window.location.href = 'member-landing.html';
+            return;
+        }
+
+        // Set current admin email for announcements
+        currentAdminEmail = userData.email;
+        console.log('Admin email for sending announcements:', currentAdminEmail);
+
+        // Display user info
+        document.getElementById('userName').textContent = userData.firstName + ' ' + userData.lastName;
+        const initials = (userData.firstName.charAt(0) + userData.lastName.charAt(0)).toUpperCase();
+        document.getElementById('userAvatar').textContent = initials;
+
+        // Load data
+        await loadStatistics();
+        await loadMembers();
+        await loadRegistrations();
+        await loadAnnouncements();
+        await loadPrayerRequests();
+        await loadLinks();
+
+        // Setup modal close on overlay click
+        document.getElementById('editMemberModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEditModal();
+            }
+        });
+    } catch (error) {
+        console.error('Error loading user data:', error);
+        StorageManager.removeItem('currentUser');
+        window.location.href = 'index.html';
     }
-
-    // Set current admin email for announcements
-    currentAdminEmail = userData.email;
-    console.log('Admin email for sending announcements:', currentAdminEmail);
-
-    // Display user info
-    document.getElementById('userName').textContent = userData.firstName + ' ' + userData.lastName;
-    const initials = (userData.firstName.charAt(0) + userData.lastName.charAt(0)).toUpperCase();
-    document.getElementById('userAvatar').textContent = initials;
-
-    // Load data
-    await loadStatistics();
-    await loadMembers();
-    await loadRegistrations();
-    await loadAnnouncements();
-    await loadPrayerRequests();
-    await loadLinks();
 });
 
 // Show/Hide Sections
@@ -123,15 +205,18 @@ async function loadMembers() {
     }
 }
 
-// Load Registrations
+// Load Registrations with Edit Button
 async function loadRegistrations() {
     try {
         const registrationsSnapshot = await db.collection('registrations').orderBy('createdAt', 'desc').get();
+        allRegistrations = [];
         const tableBody = document.getElementById('registrationsTableBody');
         tableBody.innerHTML = '';
 
         registrationsSnapshot.forEach(doc => {
             const data = doc.data();
+            allRegistrations.push({ id: doc.id, ...data });
+            const dateStr = new Date(data.createdAt?.toDate?.() || data.timestamp || new Date()).toLocaleDateString();
             const row = `
                 <tr>
                     <td>${data.firstName} ${data.lastName}</td>
@@ -139,17 +224,214 @@ async function loadRegistrations() {
                     <td>${data.phone}</td>
                     <td>${data.city}</td>
                     <td>${data.membershipType}</td>
-                    <td>${new Date(data.createdAt?.toDate?.() || data.timestamp).toLocaleDateString()}</td>
+                    <td>${dateStr}</td>
+                    <td>
+                        <button class="action-btn" onclick="openEditModal('${data.email}')">Edit</button>
+                    </td>
                 </tr>
             `;
             tableBody.innerHTML += row;
         });
 
         if (registrationsSnapshot.empty) {
-            tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No registrations found</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No registrations found</td></tr>';
         }
     } catch (error) {
         console.error('Error loading registrations:', error);
+    }
+}
+
+// Open Edit Modal
+async function openEditModal(email) {
+    try {
+        // Find user in users collection
+        const userSnapshot = await db.collection('users').where('email', '==', email).get();
+        
+        if (userSnapshot.empty) {
+            alert('User not found');
+            return;
+        }
+
+        const userData = userSnapshot.docs[0].data();
+        currentEditingMemberEmail = email;
+
+        // Populate form
+        document.getElementById('editFirstName').value = userData.firstName || '';
+        document.getElementById('editLastName').value = userData.lastName || '';
+        document.getElementById('editEmail').value = userData.email || '';
+        document.getElementById('editPhone').value = userData.phone || '';
+        document.getElementById('editCity').value = userData.city || '';
+        document.getElementById('editMembershipType').value = userData.membershipType || 'free';
+        document.getElementById('editPassword').value = '';
+        document.getElementById('editConfirmPassword').value = '';
+
+        // Clear error messages
+        document.querySelectorAll('#editMemberModal .error-message').forEach(el => el.textContent = '');
+
+        // Show modal
+        document.getElementById('editMemberModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    } catch (error) {
+        console.error('Error opening edit modal:', error);
+        alert('Error loading member data: ' + error.message);
+    }
+}
+
+// Close Edit Modal
+function closeEditModal() {
+    document.getElementById('editMemberModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    document.getElementById('editMemberForm').reset();
+    currentEditingMemberEmail = null;
+    document.querySelectorAll('#editMemberModal .error-message').forEach(el => el.textContent = '');
+}
+
+// Validate Edit Form
+function validateEditForm() {
+    const firstName = document.getElementById('editFirstName').value.trim();
+    const lastName = document.getElementById('editLastName').value.trim();
+    const email = document.getElementById('editEmail').value.trim();
+    const phone = document.getElementById('editPhone').value.trim();
+    const city = document.getElementById('editCity').value.trim();
+    const membershipType = document.getElementById('editMembershipType').value;
+    const password = document.getElementById('editPassword').value;
+    const confirmPassword = document.getElementById('editConfirmPassword').value;
+
+    let isValid = true;
+    const errors = {
+        editFirstName: '',
+        editLastName: '',
+        editEmail: '',
+        editPhone: '',
+        editCity: '',
+        editMembershipType: '',
+        editPassword: '',
+        editConfirmPassword: ''
+    };
+
+    // Validate required fields
+    if (!firstName) errors.editFirstName = 'First name is required';
+    if (!lastName) errors.editLastName = 'Last name is required';
+    if (!email) {
+        errors.editEmail = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.editEmail = 'Invalid email format';
+    }
+    if (!phone) errors.editPhone = 'Phone is required';
+    if (!city) errors.editCity = 'City is required';
+    if (!membershipType) errors.editMembershipType = 'Membership type is required';
+
+    // Validate password if provided
+    if (password || confirmPassword) {
+        if (password.length < 6) {
+            errors.editPassword = 'Password must be at least 6 characters';
+        }
+        if (password !== confirmPassword) {
+            errors.editConfirmPassword = 'Passwords do not match';
+        }
+    }
+
+    // Display errors
+    Object.keys(errors).forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        const errorElement = field.parentElement.querySelector('.error-message');
+        if (errorElement) {
+            errorElement.textContent = errors[fieldId];
+        }
+        if (errors[fieldId]) isValid = false;
+    });
+
+    return isValid;
+}
+
+// Save Edited Member
+async function saveEditedMember(event) {
+    event.preventDefault();
+
+    if (!validateEditForm()) {
+        return;
+    }
+
+    const submitBtn = event.target.querySelector('.submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving...';
+
+    try {
+        const firstName = document.getElementById('editFirstName').value.trim();
+        const lastName = document.getElementById('editLastName').value.trim();
+        const newEmail = document.getElementById('editEmail').value.trim();
+        const phone = document.getElementById('editPhone').value.trim();
+        const city = document.getElementById('editCity').value.trim();
+        const membershipType = document.getElementById('editMembershipType').value;
+        const password = document.getElementById('editPassword').value;
+
+        // Check if email already exists (if changed)
+        if (newEmail !== currentEditingMemberEmail) {
+            const emailSnapshot = await db.collection('users').where('email', '==', newEmail).get();
+            if (!emailSnapshot.empty) {
+                document.getElementById('editEmail').parentElement.querySelector('.error-message').textContent = 'This email is already in use';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Changes';
+                return;
+            }
+        }
+
+        // Find the user document
+        const userSnapshot = await db.collection('users').where('email', '==', currentEditingMemberEmail).get();
+        
+        if (userSnapshot.empty) {
+            alert('User not found');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Save Changes';
+            return;
+        }
+
+        const userRef = userSnapshot.docs[0].ref;
+        const updateData = {
+            firstName: firstName,
+            lastName: lastName,
+            phone: phone,
+            city: city,
+            membershipType: membershipType
+        };
+
+        // Update email if changed
+        if (newEmail !== currentEditingMemberEmail) {
+            updateData.email = newEmail;
+        }
+
+        // Update password if provided
+        if (password) {
+            const hashedPassword = btoa(newEmail + password + 'salt123');
+            updateData.password = hashedPassword;
+        }
+
+        updateData.updatedAt = new Date();
+
+        // Update user document
+        await userRef.update(updateData);
+
+        // If email changed, update registrations collection too
+        if (newEmail !== currentEditingMemberEmail) {
+            const registrationsSnapshot = await db.collection('registrations').where('email', '==', currentEditingMemberEmail).get();
+            for (let doc of registrationsSnapshot.docs) {
+                await doc.ref.update({
+                    email: newEmail
+                });
+            }
+        }
+
+        showSuccessMessage('✓ Member information updated successfully!');
+        closeEditModal();
+        await loadRegistrations();
+        await loadMembers();
+        await loadStatistics();
+
+    } catch (error) {
+        console.error('Error saving member:', error);
+        alert('Error saving changes: ' + error.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Save Changes';
     }
 }
 
@@ -307,7 +589,7 @@ function showSuccessMessage(message) {
         z-index: 1000;
         font-weight: 600;
     `;
-    msg.textContent = '✓ ' + message;
+    msg.textContent = message;
     document.body.appendChild(msg);
     
     setTimeout(() => {
@@ -606,7 +888,7 @@ async function deleteAnnouncement(id) {
 // Logout
 function logout() {
     if (confirm('Are you sure you want to logout?')) {
-        localStorage.removeItem('currentUser');
+        StorageManager.removeItem('currentUser');
         window.location.href = 'index.html';
     }
 }

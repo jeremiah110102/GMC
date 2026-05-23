@@ -5,15 +5,15 @@
 }
 
 :root {
-    --primary-navy: #001F3F;
-    --secondary-navy: #003D82;
-    --accent-gold: #F59E0B;
-    --dark-gold: #D97706;
-    --background: #F9FAFB;
-    --text-dark: #111827;
-    --text-light: #6B7280;
-    --border-light: #E5E7EB;
-    --success-green: #22C55E;
+    --primary-navy: #4A90E2;
+    --secondary-navy: #6BA3F5;
+    --accent-gold: #FFD700;
+    --dark-gold: #FFC700;
+    --background: #F0F4F8;
+    --text-dark: #2C3E50;
+    --text-light: #7F8C8D;
+    --border-light: #E0E6ED;
+    --success-green: #2ECC71;
 }
 
 html, body {
@@ -123,7 +123,7 @@ body {
     border-radius: 8px;
     padding: 16px;
     margin-bottom: 12px;
-    box-shadow: 0 4px 12px rgba(0, 31, 63, 0.15);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.15);
     display: flex;
     align-items: center;
     gap: 12px;
@@ -226,7 +226,7 @@ body {
     color: white;
     padding: 30px 20px;
     overflow-y: auto;
-    box-shadow: 0 8px 32px rgba(0, 31, 63, 0.15);
+    box-shadow: 0 8px 32px rgba(74, 144, 226, 0.15);
     position: fixed;
     height: 100vh;
     left: 0;
@@ -316,7 +316,7 @@ body {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: rgba(245, 158, 11, 0.2);
+    background: rgba(255, 215, 0, 0.2);
     transition: left 0.3s ease;
     z-index: -1;
 }
@@ -386,7 +386,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 4px 16px rgba(0, 31, 63, 0.08);
+    box-shadow: 0 4px 16px rgba(74, 144, 226, 0.08);
     border-bottom: 1px solid var(--border-light);
     animation: slideInDown 0.5s ease;
     gap: 15px;
@@ -451,14 +451,14 @@ body {
     justify-content: center;
     font-weight: 600;
     font-size: 18px;
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
     transition: all 0.3s ease;
     flex-shrink: 0;
 }
 
 .user-avatar:hover {
     transform: scale(1.1) rotate(5deg);
-    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+    box-shadow: 0 8px 20px rgba(255, 215, 0, 0.4);
 }
 
 .user-details {
@@ -491,7 +491,7 @@ body {
     font-weight: 600;
     font-size: 13px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 12px rgba(0, 31, 63, 0.2);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
     position: relative;
     overflow: hidden;
     white-space: nowrap;
@@ -515,7 +515,7 @@ body {
 
 .logout-btn:hover {
     transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0, 31, 63, 0.35);
+    box-shadow: 0 8px 20px rgba(74, 144, 226, 0.35);
 }
 
 .logout-btn:active {
@@ -540,12 +540,12 @@ body {
 }
 
 .content-area::-webkit-scrollbar-thumb {
-    background: rgba(0, 31, 63, 0.2);
+    background: rgba(74, 144, 226, 0.2);
     border-radius: 4px;
 }
 
 .content-area::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 31, 63, 0.4);
+    background: rgba(74, 144, 226, 0.4);
 }
 
 .section {
@@ -564,7 +564,7 @@ body {
     padding: 40px;
     border-radius: 12px;
     margin-bottom: 30px;
-    box-shadow: 0 8px 24px rgba(0, 31, 63, 0.2);
+    box-shadow: 0 8px 24px rgba(74, 144, 226, 0.2);
 }
 
 .welcome-banner h2 {
@@ -592,14 +592,14 @@ body {
     border-radius: 12px;
     padding: 25px;
     border-left: 4px solid var(--secondary-navy);
-    box-shadow: 0 4px 12px rgba(0, 31, 63, 0.05);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.05);
     transition: all 0.3s ease;
     cursor: pointer;
 }
 
 .dashboard-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 31, 63, 0.15);
+    box-shadow: 0 8px 24px rgba(74, 144, 226, 0.15);
     border-left-color: var(--accent-gold);
 }
 
@@ -629,7 +629,7 @@ body {
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 15px;
-    box-shadow: 0 2px 8px rgba(0, 31, 63, 0.08);
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.08);
     border: 1px solid var(--border-light);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     animation: fadeInUp 0.4s ease backwards;
@@ -639,7 +639,7 @@ body {
 .prayer-card:hover,
 .resource-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0, 31, 63, 0.12);
+    box-shadow: 0 8px 20px rgba(74, 144, 226, 0.12);
     border-color: var(--secondary-navy);
 }
 
@@ -684,22 +684,24 @@ body {
     display: inline-block;
     padding: 4px 12px;
     background: var(--accent-gold);
-    color: white;
+    color: #333;
     border-radius: 20px;
     font-size: 11px;
     font-weight: 600;
     white-space: nowrap;
-    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.2);
+    box-shadow: 0 2px 6px rgba(255, 215, 0, 0.2);
 }
 
 .card-badge.approved {
     background: var(--success-green);
-    box-shadow: 0 2px 6px rgba(34, 197, 94, 0.2);
+    color: white;
+    box-shadow: 0 2px 6px rgba(46, 204, 113, 0.2);
 }
 
 .card-badge.your-prayer {
     background: var(--secondary-navy);
-    box-shadow: 0 2px 6px rgba(0, 61, 130, 0.2);
+    color: white;
+    box-shadow: 0 2px 6px rgba(107, 163, 245, 0.2);
 }
 
 .card-body {
@@ -741,7 +743,7 @@ body {
     display: inline-block;
     padding: 8px 16px;
     background: linear-gradient(135deg, var(--accent-gold), var(--dark-gold));
-    color: white;
+    color: #333;
     text-decoration: none;
     border-radius: 6px;
     font-size: 13px;
@@ -749,12 +751,12 @@ body {
     transition: all 0.3s ease;
     border: none;
     cursor: pointer;
-    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.15);
+    box-shadow: 0 2px 6px rgba(255, 215, 0, 0.15);
 }
 
 .resource-link-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
 }
 
 .prayer-status {
@@ -765,7 +767,7 @@ body {
     border-radius: 20px;
     font-size: 11px;
     font-weight: 600;
-    box-shadow: 0 2px 6px rgba(34, 197, 94, 0.2);
+    box-shadow: 0 2px 6px rgba(46, 204, 113, 0.2);
 }
 
 /* ===== CONTENT SECTION ===== */
@@ -773,7 +775,7 @@ body {
     background: white;
     border-radius: 12px;
     padding: 25px;
-    box-shadow: 0 4px 12px rgba(0, 31, 63, 0.05);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.05);
     margin-bottom: 30px;
 }
 
@@ -801,7 +803,7 @@ body {
 }
 
 .profile-item {
-    background: var(--background);
+    background: #E8F0FF;
     padding: 15px;
     border-radius: 8px;
     border-left: 4px solid var(--secondary-navy);
@@ -855,7 +857,7 @@ body {
 .form-group select:focus {
     outline: none;
     border-color: var(--secondary-navy);
-    box-shadow: 0 0 0 3px rgba(0, 61, 130, 0.1);
+    box-shadow: 0 0 0 3px rgba(107, 163, 245, 0.1);
     transform: translateY(-2px);
 }
 
@@ -884,14 +886,14 @@ body {
 .submit-btn {
     padding: 12px 24px;
     background: linear-gradient(135deg, var(--accent-gold), var(--dark-gold));
-    color: white;
+    color: #333;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
     font-size: 14px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
     position: relative;
     overflow: hidden;
     min-height: 44px;
@@ -915,7 +917,7 @@ body {
 
 .submit-btn:hover {
     transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+    box-shadow: 0 8px 20px rgba(255, 215, 0, 0.4);
 }
 
 .submit-btn:active {
@@ -931,7 +933,7 @@ body {
     border-radius: 8px;
     margin-bottom: 20px;
     display: none;
-    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.1);
+    box-shadow: 0 4px 12px rgba(46, 204, 113, 0.1);
 }
 
 .success-message.show {
@@ -945,7 +947,7 @@ body {
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 20px;
-    box-shadow: 0 4px 12px rgba(0, 31, 63, 0.05);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.05);
     display: flex;
     gap: 15px;
     flex-wrap: wrap;
@@ -980,7 +982,7 @@ body {
 .filter-group select:focus {
     outline: none;
     border-color: var(--secondary-navy);
-    box-shadow: 0 0 0 3px rgba(0, 61, 130, 0.1);
+    box-shadow: 0 0 0 3px rgba(107, 163, 245, 0.1);
 }
 
 .filter-btn,
@@ -1000,23 +1002,23 @@ body {
 .filter-btn {
     background: var(--secondary-navy);
     color: white;
-    box-shadow: 0 2px 6px rgba(0, 31, 63, 0.15);
+    box-shadow: 0 2px 6px rgba(74, 144, 226, 0.15);
 }
 
 .filter-btn:hover {
     background: var(--primary-navy);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 31, 63, 0.25);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.25);
 }
 
 .reset-btn {
-    background: #6b7280;
+    background: #A0AEC0;
     color: white;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .reset-btn:hover {
-    background: #4b5563;
+    background: #7A8493;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
@@ -1529,26 +1531,26 @@ body {
 /* ===== DARK MODE SUPPORT ===== */
 @media (prefers-color-scheme: dark) {
     body {
-        background: #1f2937;
+        background: #1a1f2e;
     }
 
     .top-header {
-        background: #374151;
-        border-bottom-color: #4b5563;
+        background: #2a3142;
+        border-bottom-color: #3a4555;
     }
 
     .content-section,
     .filter-section {
-        background: #1f2937;
-        border-color: #374151;
+        background: #1a1f2e;
+        border-color: #2a3142;
     }
 
     .announcement-card,
     .prayer-card,
     .resource-card,
     .dashboard-card {
-        background: #1f2937;
-        border-color: #4b5563;
+        background: #1a1f2e;
+        border-color: #3a4555;
     }
 
     .card-title,
@@ -1559,32 +1561,32 @@ body {
 
     .card-content,
     .card-meta {
-        color: #d1d5db;
+        color: #c5d3e0;
     }
 
     .form-group input,
     .form-group textarea,
     .form-group select {
-        background: #374151;
-        border-color: #4b5563;
-        color: #f3f4f6;
+        background: #2a3142;
+        border-color: #3a4555;
+        color: #e0e6ed;
     }
 
     .profile-item {
-        background: #374151;
-        border-color: #4b5563;
+        background: #2a3142;
+        border-color: #3a4555;
     }
 
     .notification {
-        background: #1f2937;
-        color: #d1d5db;
+        background: #1a1f2e;
+        color: #c5d3e0;
     }
 
     .filter-group input,
     .filter-group select {
-        background: #374151;
-        border-color: #4b5563;
-        color: #f3f4f6;
+        background: #2a3142;
+        border-color: #3a4555;
+        color: #e0e6ed;
     }
 
     .hamburger-menu span {

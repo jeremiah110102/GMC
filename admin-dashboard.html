@@ -256,16 +256,88 @@
                                 <th>City</th>
                                 <th>Membership Type</th>
                                 <th>Date</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="registrationsTableBody">
                             <tr>
-                                <td colspan="6" style="text-align: center; color: var(--text-light);">Loading registrations...</td>
+                                <td colspan="7" style="text-align: center; color: var(--text-light);">Loading registrations...</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Edit Member Modal -->
+    <div id="editMemberModal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Member Information</h2>
+                <button type="button" class="modal-close-btn" onclick="closeEditModal()">&times;</button>
+            </div>
+
+            <form id="editMemberForm" onsubmit="saveEditedMember(event)">
+                <div class="form-group">
+                    <label>First Name *</label>
+                    <input type="text" id="editFirstName" required placeholder="First name">
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label>Last Name *</label>
+                    <input type="text" id="editLastName" required placeholder="Last name">
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label>Email Address *</label>
+                    <input type="email" id="editEmail" required placeholder="Email address">
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label>Phone Number *</label>
+                    <input type="tel" id="editPhone" required placeholder="Phone number">
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label>City *</label>
+                    <input type="text" id="editCity" required placeholder="City">
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label>Membership Type *</label>
+                    <select id="editMembershipType" required>
+                        <option value="">Select membership type</option>
+                        <option value="free">Free</option>
+                        <option value="active">Active</option>
+                        <option value="premium">Premium</option>
+                    </select>
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label>Password (leave blank to keep current)</label>
+                    <input type="password" id="editPassword" placeholder="Enter new password (6+ characters)">
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="editConfirmPassword" placeholder="Confirm password">
+                    <span class="error-message"></span>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="secondary-btn" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="submit-btn">Save Changes</button>
+                </div>
+            </form>
         </div>
     </div>
 

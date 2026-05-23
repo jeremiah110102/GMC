@@ -60,6 +60,17 @@ body {
     }
 }
 
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 @keyframes pulse {
     0%, 100% {
         opacity: 1;
@@ -95,6 +106,15 @@ body {
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
     }
 }
 
@@ -1102,6 +1122,441 @@ input[type="checkbox"]:checked {
     background: #4b5563;
 }
 
+.card-stat {
+    font-weight: 600;
+    color: var(--secondary-navy);
+    font-size: 24px;
+}
+
+/* ===== MODAL STYLES FOR EDIT MEMBER ===== */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 31, 63, 0.3);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideInModal 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInModal {
+    from {
+        transform: translateY(-60px) scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px;
+    border-bottom: 2px solid var(--border-light);
+    position: sticky;
+    top: 0;
+    background: white;
+    border-radius: 12px 12px 0 0;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary-navy);
+    letter-spacing: -0.5px;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: var(--text-light);
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    border-radius: 50%;
+    position: relative;
+}
+
+.modal-close-btn:hover {
+    color: var(--text-dark);
+    background: var(--background);
+    transform: rotate(90deg);
+}
+
+/* ===== MODAL FORM STYLES ===== */
+#editMemberForm {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+#editMemberForm .form-group {
+    margin-bottom: 0;
+    animation: fadeInUp 0.5s ease backwards;
+}
+
+#editMemberForm .form-group:nth-child(1) { animation-delay: 0.1s; }
+#editMemberForm .form-group:nth-child(2) { animation-delay: 0.15s; }
+#editMemberForm .form-group:nth-child(3) { animation-delay: 0.2s; }
+#editMemberForm .form-group:nth-child(4) { animation-delay: 0.25s; }
+#editMemberForm .form-group:nth-child(5) { animation-delay: 0.3s; }
+#editMemberForm .form-group:nth-child(6) { animation-delay: 0.35s; }
+#editMemberForm .form-group:nth-child(7) { animation-delay: 0.4s; }
+#editMemberForm .form-group:nth-child(8) { animation-delay: 0.45s; }
+
+#editMemberForm label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary-navy);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#editMemberForm input,
+#editMemberForm select {
+    padding: 11px 13px;
+    border: 2px solid var(--border-light);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: white;
+}
+
+#editMemberForm input:focus,
+#editMemberForm select:focus {
+    outline: none;
+    border-color: var(--secondary-navy);
+    box-shadow: 0 0 0 4px rgba(0, 61, 130, 0.12);
+    transform: translateY(-2px);
+    background: #f9fafb;
+}
+
+#editMemberForm input::placeholder {
+    color: #d1d5db;
+}
+
+#editMemberForm input:focus::placeholder {
+    color: var(--text-light);
+}
+
+#editMemberForm .error-message {
+    font-size: 12px;
+    color: #dc2626;
+    min-height: 18px;
+    display: block;
+    margin-top: 4px;
+    font-weight: 500;
+    animation: slideInLeft 0.2s ease;
+}
+
+#editMemberForm input.error,
+#editMemberForm select.error {
+    border-color: #dc2626 !important;
+    background-color: #fef2f2 !important;
+    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.08) !important;
+}
+
+/* ===== MODAL ACTIONS ===== */
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 2px solid var(--border-light);
+    animation: slideInUp 0.5s ease 0.5s both;
+}
+
+.secondary-btn {
+    flex: 1;
+    padding: 12px 20px;
+    background-color: var(--background);
+    color: var(--text-dark);
+    border: 2px solid var(--border-light);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.secondary-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 31, 63, 0.05);
+    transition: left 0.3s ease;
+    z-index: -1;
+}
+
+.secondary-btn:hover::before {
+    left: 0;
+}
+
+.secondary-btn:hover {
+    background-color: white;
+    border-color: var(--secondary-navy);
+    color: var(--secondary-navy);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 31, 63, 0.1);
+}
+
+.secondary-btn:active {
+    transform: translateY(0);
+}
+
+.secondary-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Modal Submit Button Override */
+#editMemberForm .submit-btn {
+    flex: 1;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, var(--secondary-navy) 0%, var(--primary-navy) 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 61, 130, 0.25);
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#editMemberForm .submit-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+#editMemberForm .submit-btn:hover::before {
+    left: 100%;
+}
+
+#editMemberForm .submit-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--primary-navy) 0%, var(--secondary-navy) 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 31, 63, 0.35);
+}
+
+#editMemberForm .submit-btn:active:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+#editMemberForm .submit-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ===== RESPONSIVE MODAL ===== */
+@media (max-width: 600px) {
+    .modal-content {
+        width: 95%;
+        max-height: 95vh;
+        border-radius: 16px;
+    }
+
+    .modal-header {
+        padding: 20px;
+    }
+
+    .modal-header h2 {
+        font-size: 18px;
+    }
+
+    #editMemberForm {
+        padding: 20px;
+        gap: 16px;
+    }
+
+    .modal-actions {
+        flex-direction: column;
+        gap: 10px;
+        padding-top: 16px;
+        margin-top: 20px;
+    }
+
+    .modal-actions .secondary-btn,
+    .modal-actions .submit-btn {
+        width: 100%;
+        padding: 12px 16px;
+    }
+
+    .modal-close-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 24px;
+    }
+}
+
+@media (max-width: 380px) {
+    .modal-header {
+        padding: 16px;
+    }
+
+    .modal-header h2 {
+        font-size: 16px;
+    }
+
+    #editMemberForm {
+        padding: 16px;
+        gap: 14px;
+    }
+
+    #editMemberForm label {
+        font-size: 12px;
+    }
+
+    #editMemberForm input,
+    #editMemberForm select {
+        font-size: 13px;
+        padding: 10px 12px;
+    }
+
+    .modal-actions {
+        margin-top: 16px;
+        padding-top: 12px;
+    }
+}
+
+/* ===== DARK MODE SUPPORT FOR MODAL ===== */
+@media (prefers-color-scheme: dark) {
+    .modal-content {
+        background: #1f2937;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-header {
+        background: #1f2937;
+        border-bottom-color: #374151;
+    }
+
+    .modal-header h2 {
+        color: #f3f4f6;
+    }
+
+    .modal-close-btn {
+        color: #9ca3af;
+    }
+
+    .modal-close-btn:hover {
+        color: #f3f4f6;
+        background: #374151;
+    }
+
+    #editMemberForm label {
+        color: #f3f4f6;
+    }
+
+    #editMemberForm input,
+    #editMemberForm select {
+        background: #374151;
+        border-color: #4b5563;
+        color: #f3f4f6;
+    }
+
+    #editMemberForm input:focus,
+    #editMemberForm select:focus {
+        background: #475569;
+        border-color: #60d9ff;
+        box-shadow: 0 0 0 4px rgba(96, 217, 255, 0.12);
+    }
+
+    #editMemberForm input::placeholder {
+        color: #6b7280;
+    }
+
+    #editMemberForm input.error,
+    #editMemberForm select.error {
+        background-color: #7f1d1d !important;
+        border-color: #fca5a5 !important;
+    }
+
+    .secondary-btn {
+        background-color: #374151;
+        border-color: #4b5563;
+        color: #f3f4f6;
+    }
+
+    .secondary-btn:hover {
+        background-color: #475569;
+        border-color: #60d9ff;
+        color: #60d9ff;
+    }
+
+    .modal-actions {
+        border-top-color: #374151;
+    }
+}
+
+/* ===== MODAL ACCESSIBILITY ===== */
+.modal:focus-visible {
+    outline: none;
+}
+
+.modal-content:focus-visible {
+    outline: 2px solid var(--secondary-navy);
+    outline-offset: 2px;
+}
+
 /* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
     .sidebar {
@@ -1425,10 +1880,4 @@ input[type="checkbox"]:checked {
     font-size: 13px;
     line-height: 1.6;
     margin-bottom: 15px;
-}
-
-.card-stat {
-    font-weight: 600;
-    color: var(--secondary-navy);
-    font-size: 24px;
 }
