@@ -142,7 +142,7 @@ class RealtimeNotificationManager {
 }
 
 let realtimeNotificationManager;
-
+const hasNumber = /\d/;
 // ===== CONTENT MODERATION SYSTEM =====
 const ContentModerator = {
     bannedWords: [
@@ -224,7 +224,7 @@ const ContentModerator = {
   '.com', '.net', '.org',
   '@gmail', '@yahoo', '@hotmail',
   //number 
-  1,2,3,4,5,6,7,8,9,0
+  hasNumber
 ],
 
     // Specific strict filters (any match = auto-reject)
@@ -307,7 +307,7 @@ const ContentModerator = {
   '.com', '.net', '.org',
   '@gmail', '@yahoo', '@hotmail',
   //number
-  1,2,3,4,5,6,7,8,9,0
+  hasNumber
 ],
 
     suspiciousPatterns: [
