@@ -65,6 +65,356 @@ const StorageManager = {
     }
 };
 
+// ===== REAL-TIME NOTIFICATION SYSTEM =====
+class RealtimeNotificationManager {
+    constructor() {
+        this.notifications = [];
+        this.maxNotifications = 3;
+    }
+
+    show(title, message, type = 'info', duration = 5000) {
+        const container = document.getElementById('notificationContainer') || this.createContainer();
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        
+        const icon = {
+            'success': '✓',
+            'info': 'ℹ',
+            'warning': '⚠'
+        }[type] || 'ℹ';
+
+        notification.innerHTML = `
+            <div class="notification-icon">${icon}</div>
+            <div class="notification-content">
+                <div class="notification-title">${title}</div>
+                <div class="notification-message">${message}</div>
+            </div>
+            <button class="notification-close" onclick="realtimeNotificationManager.closeNotification(this)">×</button>
+        `;
+
+        if (container.firstChild) {
+            container.insertBefore(notification, container.firstChild);
+        } else {
+            container.appendChild(notification);
+        }
+
+        this.notifications.push(notification);
+
+        if (this.notifications.length > this.maxNotifications) {
+            const oldest = this.notifications.shift();
+            if (oldest.parentElement) {
+                oldest.classList.add('fade-out');
+                setTimeout(() => oldest.remove(), 300);
+            }
+        }
+
+        if (duration > 0) {
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    this.closeNotification(notification);
+                }
+            }, duration);
+        }
+
+        return notification;
+    }
+
+    createContainer() {
+        const container = document.createElement('div');
+        container.id = 'notificationContainer';
+        container.className = 'notification-container';
+        document.body.appendChild(container);
+        return container;
+    }
+
+    closeNotification(element) {
+        const notif = element instanceof HTMLElement ? element : element.parentElement;
+        if (!notif || !notif.parentElement) return;
+        
+        notif.classList.add('fade-out');
+        setTimeout(() => {
+            if (notif.parentElement) {
+                notif.remove();
+            }
+            this.notifications = this.notifications.filter(n => n !== notif);
+        }, 300);
+    }
+}
+
+let realtimeNotificationManager;
+
+// ===== CONTENT MODERATION SYSTEM =====
+const ContentModerator = {
+    bannedWords: [
+    // =========================
+  // Violence / Harm / Threats
+  // =========================
+  'hate', 'kill', 'killing', 'suicide', 'selfharm', 'self-harm',
+  'abuse', 'violence', 'violent', 'harm', 'hurting', 'death',
+  'dead', 'die', 'dying',
+  'threat', 'threaten', 'attack', 'attacking',
+  'rape', 'raped', 'raping',
+  'assault', 'murder', 'murdered',
+  'terrorist', 'terrorism',
+  'bomb', 'explosive', 'explosion',
+  'gun', 'firearm', 'shoot', 'shooting',
+  'stab', 'stabbing',
+  'patay', 'saksak', 'baril', 'patayin', 'mamatay', 'pumatay',
+  'bugbog', 'away', 'suntok',
+
+  // =========================
+  // Hate Speech / Discrimination
+  // =========================
+  'racist', 'racism', 'discrimination',
+  'slur', 'homophobic', 'sexist',
+  'nigger', 'chink', 'spic', 'fag', 'retard',
+
+  'bobo', 'tanga', 'ulol', 'gago', 'inutil', 'tarantado',
+  'lintik', 'hayop', 'demonyo', 'hayup',
+
+  // =========================
+  // Sexual / Explicit Content
+  // =========================
+  'explicit', 'porn', 'pornography',
+  'sex', 'sexual', 'nude', 'nudity',
+  'hubad', 'kantot', 'kantutan',
+  'jakol', 'bayag', 'titi', 'pepe', 'puke', 'burat',
+  'masturbate', 'masturbation',
+
+  // =========================
+  // English Profanity
+  // =========================
+  'fuck', 'fucked', 'fucking',
+  'shit', 'bullshit', 'shitty',
+  'damn', 'hell',
+  'bitch', 'bitches',
+  'asshole', 'a-hole',
+  'motherfucker', 'mf',
+  'bastard',
+  'dick', 'cock',
+  'pussy',
+  'slut', 'whore',
+  'crap',
+
+  // =========================
+  // Tagalog / Filipino Profanity
+  // =========================
+  'putangina', 'putang ina', 'puta', 'putaena', 'pota', 'potaena',
+  'gagi', 'gago',
+  'leche', 'bwisit',
+  'pakyu', 'punyeta',
+  'hindot', 'kantutan',
+  'ulol',
+
+  // =========================
+  // Spam / Scam / Fraud / Hack
+  // =========================
+  'scam', 'fraud', 'fake',
+  'spam', 'spammer',
+  'hack', 'hacker', 'hacking',
+  'phishing',
+  'nakaw', 'steal', 'stolen',
+  'loko', 'manloloko',
+  'estafa',
+
+  // =========================
+  // Suspicious Links / Contact Leakage (optional but useful)
+  // =========================
+  'http://', 'https://', 'www.',
+  '.com', '.net', '.org',
+  '@gmail', '@yahoo', '@hotmail'
+],
+
+    // Specific strict filters (any match = auto-reject)
+    strictFilters: [
+    // =========================
+  // Violence / Harm / Threats
+  // =========================
+  'hate', 'kill', 'killing', 'suicide', 'selfharm', 'self-harm',
+  'abuse', 'violence', 'violent', 'harm', 'hurting', 'death',
+  'dead', 'die', 'dying',
+  'threat', 'threaten', 'attack', 'attacking',
+  'rape', 'raped', 'raping',
+  'assault', 'murder', 'murdered',
+  'terrorist', 'terrorism',
+  'bomb', 'explosive', 'explosion',
+  'gun', 'firearm', 'shoot', 'shooting',
+  'stab', 'stabbing',
+  'patay', 'saksak', 'baril', 'patayin', 'mamatay', 'pumatay',
+  'bugbog', 'away', 'suntok',
+
+  // =========================
+  // Hate Speech / Discrimination
+  // =========================
+  'racist', 'racism', 'discrimination',
+  'slur', 'homophobic', 'sexist',
+  'nigger', 'chink', 'spic', 'fag', 'retard',
+
+  'bobo', 'tanga', 'ulol', 'gago', 'inutil', 'tarantado',
+  'lintik', 'hayop', 'demonyo', 'hayup',
+
+  // =========================
+  // Sexual / Explicit Content
+  // =========================
+  'explicit', 'porn', 'pornography',
+  'sex', 'sexual', 'nude', 'nudity',
+  'hubad', 'kantot', 'kantutan',
+  'jakol', 'bayag', 'titi', 'pepe', 'puke', 'burat',
+  'masturbate', 'masturbation',
+
+  // =========================
+  // English Profanity
+  // =========================
+  'fuck', 'fucked', 'fucking',
+  'shit', 'bullshit', 'shitty',
+  'damn', 'hell',
+  'bitch', 'bitches',
+  'asshole', 'a-hole',
+  'motherfucker', 'mf',
+  'bastard',
+  'dick', 'cock',
+  'pussy',
+  'slut', 'whore',
+  'crap',
+
+  // =========================
+  // Tagalog / Filipino Profanity
+  // =========================
+  'putangina', 'putang ina', 'puta', 'putaena', 'pota', 'potaena',
+  'gagi', 'gago',
+  'leche', 'bwisit',
+  'pakyu', 'punyeta',
+  'hindot', 'kantutan',
+  'ulol',
+
+  // =========================
+  // Spam / Scam / Fraud / Hack
+  // =========================
+  'scam', 'fraud', 'fake',
+  'spam', 'spammer',
+  'hack', 'hacker', 'hacking',
+  'phishing',
+  'nakaw', 'steal', 'stolen',
+  'loko', 'manloloko',
+  'estafa',
+
+  // =========================
+  // Suspicious Links / Contact Leakage (optional but useful)
+  // =========================
+  'http://', 'https://', 'www.',
+  '.com', '.net', '.org',
+  '@gmail', '@yahoo', '@hotmail'
+],
+
+    suspiciousPatterns: [
+        /(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})/g,
+        /([\w.-]+@[\w.-]+\.\w+)/g,
+        /(http|https):\/\//g,
+        /\$\d+/g,
+    ],
+
+    validateContent(title, message) {
+        const fullText = (title + ' ' + message).toLowerCase();
+        const titleLower = title.toLowerCase();
+        const messageLower = message.toLowerCase();
+        
+        // ===== STRICT FILTER CHECK (Most Important) =====
+        // Check if title contains "fuck" - NOT APPROVED
+        if (titleLower.includes('fuck')) {
+            return {
+                shouldApprove: false,
+                reason: `Title contains inappropriate language`,
+                requiresReview: true
+            };
+        }
+        
+        // Check if message contains "fuck you" - NOT APPROVED
+        if (messageLower.includes('fuck you')) {
+            return {
+                shouldApprove: false,
+                reason: `Contains inappropriate language`,
+                requiresReview: true
+            };
+        }
+        
+        // Check if message contains just "fuck" - NOT APPROVED
+        if (messageLower.includes('fuck')) {
+            return {
+                shouldApprove: false,
+                reason: `Contains inappropriate language`,
+                requiresReview: true
+            };
+        }
+
+        // ===== STANDARD BANNED WORDS CHECK =====
+        for (let word of this.bannedWords) {
+            if (fullText.includes(word)) {
+                return {
+                    shouldApprove: false,
+                    reason: `Contains potentially harmful content: "${word}"`,
+                    requiresReview: true
+                };
+            }
+        }
+
+        let suspiciousCount = 0;
+        for (let pattern of this.suspiciousPatterns) {
+            const matches = fullText.match(pattern);
+            if (matches && matches.length > 0) {
+                suspiciousCount += matches.length;
+            }
+        }
+
+        if (suspiciousCount > 2) {
+            return {
+                shouldApprove: false,
+                reason: `Contains multiple contact details or links (${suspiciousCount} found)`,
+                requiresReview: true
+            };
+        }
+
+        const capsRatio = (fullText.match(/[A-Z]/g) || []).length / fullText.length;
+        if (capsRatio > 0.5 && fullText.length > 20) {
+            return {
+                shouldApprove: false,
+                reason: 'Excessive capitalization detected',
+                requiresReview: true
+            };
+        }
+
+        const punctCount = (fullText.match(/[!?]{2,}/g) || []).length;
+        if (punctCount > 3) {
+            return {
+                shouldApprove: false,
+                reason: 'Excessive punctuation detected',
+                requiresReview: true
+            };
+        }
+
+        if (message.trim().length < 10) {
+            return {
+                shouldApprove: false,
+                reason: 'Prayer request too short',
+                requiresReview: true
+            };
+        }
+
+        if (message.trim().length > 5000) {
+            return {
+                shouldApprove: false,
+                reason: 'Prayer request too long',
+                requiresReview: true
+            };
+        }
+
+        return {
+            shouldApprove: true,
+            reason: 'Auto-approved: Clean content',
+            requiresReview: false
+        };
+    }
+};
+
 let allMembers = [];
 let selectedMembers = [];
 let allAnnouncements = [];
@@ -72,9 +422,12 @@ let allLinks = [];
 let allPrayerRequests = [];
 let currentEditingMemberEmail = null;
 let allRegistrations = [];
+let prayerRequestListener = null;
 
 // Check if user is admin on page load
 document.addEventListener('DOMContentLoaded', async function() {
+    realtimeNotificationManager = new RealtimeNotificationManager();
+    
     const currentUser = StorageManager.getItem('currentUser');
     
     if (!currentUser) {
@@ -93,16 +446,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
 
-        // Set current admin email for announcements
         currentAdminEmail = userData.email;
-        console.log('Admin email for sending announcements:', currentAdminEmail);
+        console.log('Admin email:', currentAdminEmail);
 
-        // Display user info
         document.getElementById('userName').textContent = userData.firstName + ' ' + userData.lastName;
         const initials = (userData.firstName.charAt(0) + userData.lastName.charAt(0)).toUpperCase();
         document.getElementById('userAvatar').textContent = initials;
 
-        // Load data
         await loadStatistics();
         await loadMembers();
         await loadRegistrations();
@@ -110,7 +460,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         await loadPrayerRequests();
         await loadLinks();
 
-        // Setup modal close on overlay click
+        // Setup real-time listener for prayer requests
+        setupRealtimePrayerListener();
+
         document.getElementById('editMemberModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeEditModal();
@@ -123,18 +475,81 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
+// ===== REAL-TIME LISTENER FOR PRAYERS =====
+function setupRealtimePrayerListener() {
+    // Remove old listener if exists
+    if (prayerRequestListener) {
+        prayerRequestListener();
+    }
+
+    // Setup real-time listener
+    prayerRequestListener = db.collection('prayerRequests')
+        .orderBy('createdAt', 'desc')
+        .onSnapshot((snapshot) => {
+            console.log('📥 Prayer requests updated in real-time');
+            
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === 'added') {
+                    const data = change.doc.data();
+                    console.log('🆕 New prayer request:', data.title);
+                    
+                    // Show notification for new prayer
+                    const title = data.title;
+                    const submitter = data.isAnonymous ? 'Anonymous' : data.submitterName;
+                    realtimeNotificationManager.show(
+                        '🙏 New Prayer Request',
+                        `"${title}" by ${submitter}`,
+                        'info',
+                        6000
+                    );
+                } else if (change.type === 'modified') {
+                    const data = change.doc.data();
+                    console.log('✏️ Prayer request updated:', data.title);
+                    
+                    // Show notification for status change
+                    if (data.status === 'approved') {
+                        realtimeNotificationManager.show(
+                            '✓ Prayer Approved',
+                            `"${data.title}" is now approved`,
+                            'success',
+                            5000
+                        );
+                    } else if (data.status === 'declined') {
+                        realtimeNotificationManager.show(
+                            '✗ Prayer Declined',
+                            `"${data.title}" has been declined`,
+                            'warning',
+                            5000
+                        );
+                    }
+                } else if (change.type === 'removed') {
+                    const data = change.doc.data();
+                    console.log('🗑️ Prayer request deleted:', data.title);
+                    
+                    realtimeNotificationManager.show(
+                        '🗑️ Prayer Deleted',
+                        `"${data.title}" has been removed`,
+                        'info',
+                        4000
+                    );
+                }
+            });
+
+            // Reload prayer requests
+            loadPrayerRequests();
+        }, (error) => {
+            console.error('Error setting up real-time listener:', error);
+        });
+}
+
 // Show/Hide Sections
 function showSection(sectionId) {
-    // Hide all sections
     document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
-    // Show selected section
     document.getElementById(sectionId).classList.add('active');
 
-    // Update nav links
     document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
     event.target.closest('a').classList.add('active');
 
-    // Update header text
     const sectionTitles = {
         'dashboard': 'Dashboard Overview',
         'members': 'Members Management',
@@ -145,7 +560,6 @@ function showSection(sectionId) {
     };
     document.getElementById('currentSection').textContent = sectionTitles[sectionId] || 'Dashboard';
 
-    // Refresh data when opening prayer requests
     if (sectionId === 'prayerRequests') {
         loadPrayerRequests();
     }
@@ -178,7 +592,7 @@ async function loadMembers() {
 
         usersSnapshot.forEach(doc => {
             const data = doc.data();
-            if (data.email !== 'admin@gracemission.com') { // Exclude main admin
+            if (data.email !== 'admin@gracemission.com') {
                 allMembers.push(data);
                 const isAdmin = data.isAdmin ? '<span class="badge admin">ADMIN</span>' : '';
                 const row = `
@@ -244,7 +658,6 @@ async function loadRegistrations() {
 // Open Edit Modal
 async function openEditModal(email) {
     try {
-        // Find user in users collection
         const userSnapshot = await db.collection('users').where('email', '==', email).get();
         
         if (userSnapshot.empty) {
@@ -255,7 +668,6 @@ async function openEditModal(email) {
         const userData = userSnapshot.docs[0].data();
         currentEditingMemberEmail = email;
 
-        // Populate form
         document.getElementById('editFirstName').value = userData.firstName || '';
         document.getElementById('editLastName').value = userData.lastName || '';
         document.getElementById('editEmail').value = userData.email || '';
@@ -265,10 +677,8 @@ async function openEditModal(email) {
         document.getElementById('editPassword').value = '';
         document.getElementById('editConfirmPassword').value = '';
 
-        // Clear error messages
         document.querySelectorAll('#editMemberModal .error-message').forEach(el => el.textContent = '');
 
-        // Show modal
         document.getElementById('editMemberModal').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     } catch (error) {
@@ -309,7 +719,6 @@ function validateEditForm() {
         editConfirmPassword: ''
     };
 
-    // Validate required fields
     if (!firstName) errors.editFirstName = 'First name is required';
     if (!lastName) errors.editLastName = 'Last name is required';
     if (!email) {
@@ -321,7 +730,6 @@ function validateEditForm() {
     if (!city) errors.editCity = 'City is required';
     if (!membershipType) errors.editMembershipType = 'Membership type is required';
 
-    // Validate password if provided
     if (password || confirmPassword) {
         if (password.length < 6) {
             errors.editPassword = 'Password must be at least 6 characters';
@@ -331,7 +739,6 @@ function validateEditForm() {
         }
     }
 
-    // Display errors
     Object.keys(errors).forEach(fieldId => {
         const field = document.getElementById(fieldId);
         const errorElement = field.parentElement.querySelector('.error-message');
@@ -365,7 +772,6 @@ async function saveEditedMember(event) {
         const membershipType = document.getElementById('editMembershipType').value;
         const password = document.getElementById('editPassword').value;
 
-        // Check if email already exists (if changed)
         if (newEmail !== currentEditingMemberEmail) {
             const emailSnapshot = await db.collection('users').where('email', '==', newEmail).get();
             if (!emailSnapshot.empty) {
@@ -376,7 +782,6 @@ async function saveEditedMember(event) {
             }
         }
 
-        // Find the user document
         const userSnapshot = await db.collection('users').where('email', '==', currentEditingMemberEmail).get();
         
         if (userSnapshot.empty) {
@@ -395,12 +800,10 @@ async function saveEditedMember(event) {
             membershipType: membershipType
         };
 
-        // Update email if changed
         if (newEmail !== currentEditingMemberEmail) {
             updateData.email = newEmail;
         }
 
-        // Update password if provided
         if (password) {
             const hashedPassword = btoa(newEmail + password + 'salt123');
             updateData.password = hashedPassword;
@@ -408,10 +811,8 @@ async function saveEditedMember(event) {
 
         updateData.updatedAt = new Date();
 
-        // Update user document
         await userRef.update(updateData);
 
-        // If email changed, update registrations collection too
         if (newEmail !== currentEditingMemberEmail) {
             const registrationsSnapshot = await db.collection('registrations').where('email', '==', currentEditingMemberEmail).get();
             for (let doc of registrationsSnapshot.docs) {
@@ -465,7 +866,7 @@ async function loadAnnouncements() {
     }
 }
 
-// Load Prayer Requests
+// Load Prayer Requests with Smart Status (Real-time)
 async function loadPrayerRequests() {
     try {
         const prayerSnapshot = await db.collection('prayerRequests').orderBy('createdAt', 'desc').get();
@@ -483,58 +884,242 @@ async function loadPrayerRequests() {
             return;
         }
 
+        const pendingPrayers = [];
+        const approvedPrayers = [];
+        const declinedPrayers = [];
+
         prayerSnapshot.forEach(doc => {
             const data = doc.data();
-            allPrayerRequests.push({ id: doc.id, ...data });
             
-            const statusBadge = getStatusBadge(data.status || 'pending');
-            const submitterName = data.isAnonymous ? '🔒 Anonymous' : `👤 ${data.submitterName}`;
-            
-            const prayerCard = `
-                <div class="prayer-request-card">
+            if (!data.status || data.status === 'pending') {
+                const validation = ContentModerator.validateContent(data.title, data.message);
+                
+                if (validation.shouldApprove) {
+                    approveAndStore(doc.id, data, true);
+                    approvedPrayers.push({ id: doc.id, ...data, status: 'approved', autoApproved: true });
+                } else {
+                    pendingPrayers.push({ id: doc.id, ...data, validation });
+                }
+            } else if (data.status === 'approved') {
+                approvedPrayers.push({ id: doc.id, ...data });
+            } else if (data.status === 'declined') {
+                declinedPrayers.push({ id: doc.id, ...data });
+            }
+        });
+
+        // Display pending prayers
+        if (pendingPrayers.length > 0) {
+            const pendingTitle = document.createElement('h3');
+            pendingTitle.style.cssText = `
+                color: var(--text-dark);
+                margin-top: 20px;
+                margin-bottom: 15px;
+                border-bottom: 2px solid var(--secondary-navy);
+                padding-bottom: 10px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            `;
+            pendingTitle.innerHTML = `
+                <span>⏳ Pending Review (${pendingPrayers.length}) - Requires Manual Approval</span>
+                <span style="background: #fbbf24; color: #78350f; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">🔴 LIVE</span>
+            `;
+            prayerContainer.appendChild(pendingTitle);
+
+            pendingPrayers.forEach((prayer, index) => {
+                const submitterName = prayer.isAnonymous ? '🔒 Anonymous' : `👤 ${prayer.submitterName}`;
+                
+                const prayerCard = document.createElement('div');
+                prayerCard.className = 'prayer-request-card';
+                prayerCard.style.animationDelay = `${index * 0.1}s`;
+                prayerCard.innerHTML = `
                     <div class="prayer-request-header">
-                        <div class="prayer-title">${data.title}</div>
-                        <div class="prayer-status-badge">${statusBadge}</div>
+                        <div class="prayer-title">${prayer.title}</div>
+                        <div class="prayer-status-badge">
+                            <span class="badge pending">⏳ Pending Review</span>
+                            <span class="review-reason" style="
+                                background: #fef3c7;
+                                color: #92400e;
+                                padding: 4px 8px;
+                                border-radius: 4px;
+                                font-size: 11px;
+                                margin-left: 8px;
+                            ">${prayer.validation.reason}</span>
+                        </div>
                     </div>
-                    <div class="prayer-content">${data.message}</div>
+                    <div class="prayer-content">${prayer.message}</div>
                     <div class="prayer-meta">
-                        ${submitterName} • 📅 ${new Date(data.createdAt?.toDate?.() || new Date()).toLocaleDateString()}
+                        ${submitterName} • 📅 ${new Date(prayer.createdAt?.toDate?.() || new Date()).toLocaleDateString()}
                     </div>
                     <div class="prayer-actions">
-                        <button class="action-btn success" onclick="approvePrayerRequest('${doc.id}')">✓ Approve</button>
-                        <button class="action-btn warning" onclick="declinePrayerRequest('${doc.id}')">✗ Decline</button>
-                        <button class="action-btn danger" onclick="deletePrayerRequest('${doc.id}')">🗑️ Delete</button>
+                        <button class="action-btn success" onclick="approvePrayerRequest('${prayer.id}')">✓ Approve</button>
+                        <button class="action-btn warning" onclick="declinePrayerRequest('${prayer.id}')">✗ Decline</button>
+                        <button class="action-btn danger" onclick="deletePrayerRequest('${prayer.id}')">🗑️ Delete</button>
                     </div>
                 </div>
+                `;
+                prayerContainer.appendChild(prayerCard);
+            });
+        }
+
+        // Display approved prayers
+        if (approvedPrayers.length > 0) {
+            const approvedTitle = document.createElement('h3');
+            approvedTitle.style.cssText = `
+                color: #065f46;
+                margin-top: 30px;
+                margin-bottom: 15px;
+                border-bottom: 2px solid var(--success-green);
+                padding-bottom: 10px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
             `;
-            prayerContainer.innerHTML += prayerCard;
-        });
+            
+            const autoCount = approvedPrayers.filter(p => p.autoApproved).length;
+            const manualCount = approvedPrayers.filter(p => !p.autoApproved).length;
+            approvedTitle.innerHTML = `
+                <span>✓ Approved (${approvedPrayers.length}) ${autoCount > 0 ? `- ${autoCount} auto-approved, ${manualCount} manual` : ''}</span>
+                <span style="background: #d1f5f0; color: #047857; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">🟢 LIVE</span>
+            `;
+            prayerContainer.appendChild(approvedTitle);
+
+            approvedPrayers.forEach((prayer, index) => {
+                const submitterName = prayer.isAnonymous ? '🔒 Anonymous' : `👤 ${prayer.submitterName}`;
+                const autoApprovedBadge = prayer.autoApproved 
+                    ? `<span class="auto-approved-badge" style="
+                        background: #d1f5f0;
+                        color: #047857;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        font-size: 11px;
+                        margin-left: 8px;
+                    ">🤖 Auto-Approved</span>`
+                    : '';
+                
+                const prayerCard = document.createElement('div');
+                prayerCard.className = 'prayer-request-card approved';
+                prayerCard.style.animationDelay = `${index * 0.1}s`;
+                prayerCard.innerHTML = `
+                    <div class="prayer-request-header">
+                        <div class="prayer-title">${prayer.title}</div>
+                        <div class="prayer-status-badge">
+                            <span class="badge approved">✓ Approved</span>
+                            ${autoApprovedBadge}
+                        </div>
+                    </div>
+                    <div class="prayer-content">${prayer.message}</div>
+                    <div class="prayer-meta">
+                        ${submitterName} • 📅 ${new Date(prayer.createdAt?.toDate?.() || new Date()).toLocaleDateString()}
+                    </div>
+                    <div class="prayer-actions">
+                        <button class="action-btn" disabled style="background: #d1d5db; color: #6b7280; cursor: not-allowed;">✓ Already Approved</button>
+                        <button class="action-btn warning" onclick="declinePrayerRequest('${prayer.id}')">✗ Decline</button>
+                        <button class="action-btn danger" onclick="deletePrayerRequest('${prayer.id}')">🗑️ Delete</button>
+                    </div>
+                </div>
+                `;
+                prayerContainer.appendChild(prayerCard);
+            });
+        }
+
+        // Display declined prayers
+        if (declinedPrayers.length > 0) {
+            const declinedTitle = document.createElement('h3');
+            declinedTitle.style.cssText = `
+                color: #7f1d1d;
+                margin-top: 30px;
+                margin-bottom: 15px;
+                border-bottom: 2px solid #ef4444;
+                padding-bottom: 10px;
+                cursor: pointer;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            `;
+            declinedTitle.innerHTML = `
+                <span>✗ Declined (${declinedPrayers.length}) - Click to expand</span>
+                <span style="background: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">🔴 LIVE</span>
+            `;
+            
+            const declinedContainer = document.createElement('div');
+            declinedContainer.style.display = 'none';
+            
+            declinedPrayers.forEach((prayer, index) => {
+                const submitterName = prayer.isAnonymous ? '🔒 Anonymous' : `👤 ${prayer.submitterName}`;
+                
+                const prayerCard = document.createElement('div');
+                prayerCard.className = 'prayer-request-card';
+                prayerCard.style.animationDelay = `${index * 0.1}s`;
+                prayerCard.innerHTML = `
+                    <div class="prayer-request-header">
+                        <div class="prayer-title">${prayer.title}</div>
+                        <span class="badge declined">✗ Declined</span>
+                    </div>
+                    <div class="prayer-content">${prayer.message}</div>
+                    <div class="prayer-meta">
+                        ${submitterName} • 📅 ${new Date(prayer.createdAt?.toDate?.() || new Date()).toLocaleDateString()}
+                        ${prayer.declineReason ? `<br>Reason: ${prayer.declineReason}` : ''}
+                    </div>
+                    <div class="prayer-actions">
+                        <button class="action-btn success" onclick="approvePrayerRequest('${prayer.id}')">↩️ Re-approve</button>
+                        <button class="action-btn danger" onclick="deletePrayerRequest('${prayer.id}')">🗑️ Delete</button>
+                    </div>
+                </div>
+                `;
+                declinedContainer.appendChild(prayerCard);
+            });
+
+            declinedTitle.addEventListener('click', () => {
+                const isHidden = declinedContainer.style.display === 'none';
+                declinedContainer.style.display = isHidden ? 'block' : 'none';
+                declinedTitle.innerHTML = isHidden 
+                    ? `
+                        <span>✗ Declined (${declinedPrayers.length}) - Click to collapse</span>
+                        <span style="background: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">🔴 LIVE</span>
+                    `
+                    : `
+                        <span>✗ Declined (${declinedPrayers.length}) - Click to expand</span>
+                        <span style="background: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">🔴 LIVE</span>
+                    `;
+            });
+
+            prayerContainer.appendChild(declinedTitle);
+            prayerContainer.appendChild(declinedContainer);
+        }
+
     } catch (error) {
         console.error('Error loading prayer requests:', error);
         document.getElementById('prayerRequestsContainer').innerHTML = '<p style="color: red;">Error loading prayer requests</p>';
     }
 }
 
-// Get Status Badge
-function getStatusBadge(status) {
-    const badges = {
-        'pending': '<span class="badge pending">⏳ Pending</span>',
-        'approved': '<span class="badge approved">✓ Approved</span>',
-        'declined': '<span class="badge declined">✗ Declined</span>'
-    };
-    return badges[status] || badges['pending'];
+// Auto-approve and store approval status
+async function approveAndStore(id, data, isAutoApproved = false) {
+    try {
+        if (data.status !== 'approved') {
+            await db.collection('prayerRequests').doc(id).update({
+                status: 'approved',
+                approvedAt: new Date(),
+                approvedBy: isAutoApproved ? 'SYSTEM' : currentAdminEmail,
+                isAutoApproved: isAutoApproved
+            });
+        }
+    } catch (error) {
+        console.error('Error in approveAndStore:', error);
+    }
 }
 
-// Approve Prayer Request
+// Approve Prayer Request (Manual)
 async function approvePrayerRequest(id) {
     try {
         await db.collection('prayerRequests').doc(id).update({
             status: 'approved',
             approvedAt: new Date(),
-            approvedBy: currentAdminEmail
+            approvedBy: currentAdminEmail,
+            isAutoApproved: false
         });
-        await loadPrayerRequests();
-        showSuccessMessage('Prayer request approved!');
+        // Real-time listener will handle the update
     } catch (error) {
         console.error('Error approving prayer request:', error);
         alert('Error approving prayer request: ' + error.message);
@@ -544,7 +1129,8 @@ async function approvePrayerRequest(id) {
 // Decline Prayer Request
 async function declinePrayerRequest(id) {
     const reason = prompt('Enter reason for declining (optional):');
-    
+    if (reason === null) return;
+
     try {
         await db.collection('prayerRequests').doc(id).update({
             status: 'declined',
@@ -552,8 +1138,7 @@ async function declinePrayerRequest(id) {
             declinedBy: currentAdminEmail,
             declineReason: reason || ''
         });
-        await loadPrayerRequests();
-        showSuccessMessage('Prayer request declined!');
+        // Real-time listener will handle the update
     } catch (error) {
         console.error('Error declining prayer request:', error);
         alert('Error declining prayer request: ' + error.message);
@@ -562,12 +1147,11 @@ async function declinePrayerRequest(id) {
 
 // Delete Prayer Request
 async function deletePrayerRequest(id) {
-    if (!confirm('Delete this prayer request?')) return;
+    if (!confirm('Delete this prayer request? This cannot be undone.')) return;
 
     try {
         await db.collection('prayerRequests').doc(id).delete();
-        await loadPrayerRequests();
-        showSuccessMessage('Prayer request deleted!');
+        // Real-time listener will handle the update
     } catch (error) {
         console.error('Error deleting prayer request:', error);
         alert('Error deleting prayer request: ' + error.message);
@@ -730,10 +1314,9 @@ async function deleteSelected() {
     await loadMembers();
 }
 
-// Get current admin user
 let currentAdminEmail = '';
 
-// Send Announcement - Store in Firestore Only
+// Send Announcement
 async function sendAnnouncement(e) {
     e.preventDefault();
 
@@ -761,7 +1344,6 @@ async function sendAnnouncement(e) {
     }
 
     try {
-        // Save announcement to Firestore
         await db.collection('announcements').add({
             title: title,
             message: message,
@@ -773,24 +1355,20 @@ async function sendAnnouncement(e) {
             senderEmail: currentAdminEmail
         });
 
-        // Show success message
         const successMsg = document.getElementById('successMessage');
         successMsg.textContent = `✓ Announcement saved successfully!`;
         successMsg.classList.add('show');
 
-        // Reset form
         document.getElementById('announcementTitle').value = '';
         document.getElementById('announcementMessage').value = '';
         document.getElementById('sendTo').value = '';
         selectedMembers = [];
         document.querySelectorAll('#memberCheckboxes input').forEach(cb => cb.checked = false);
 
-        // Hide success message after 5 seconds
         setTimeout(() => {
             successMsg.classList.remove('show');
         }, 5000);
 
-        // Reload announcements
         await loadAnnouncements();
     } catch (error) {
         console.error('Error saving announcement:', error);
@@ -812,10 +1390,8 @@ async function addLink(e) {
     }
 
     try {
-        // Validate URL
         new URL(url);
 
-        // Save link to Firestore
         await db.collection('links').add({
             title: title,
             url: url,
@@ -824,22 +1400,18 @@ async function addLink(e) {
             createdBy: currentAdminEmail
         });
 
-        // Show success message
         const successMsg = document.getElementById('linkSuccessMessage');
         successMsg.textContent = `✓ Link added successfully!`;
         successMsg.classList.add('show');
 
-        // Reset form
         document.getElementById('linkTitle').value = '';
         document.getElementById('linkUrl').value = '';
         document.getElementById('linkDescription').value = '';
 
-        // Hide success message after 5 seconds
         setTimeout(() => {
             successMsg.classList.remove('show');
         }, 5000);
 
-        // Reload links
         await loadLinks();
     } catch (error) {
         if (error instanceof TypeError) {
@@ -888,6 +1460,10 @@ async function deleteAnnouncement(id) {
 // Logout
 function logout() {
     if (confirm('Are you sure you want to logout?')) {
+        // Clean up real-time listener
+        if (prayerRequestListener) {
+            prayerRequestListener();
+        }
         StorageManager.removeItem('currentUser');
         window.location.href = 'index.html';
     }
