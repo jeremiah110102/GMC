@@ -192,7 +192,7 @@ function setUpAutoRefresh() {
         await checkForNewAnnouncements();
         await checkForNewPrayers();
         await checkForNewResources();
-    }, 30000); // Check every 30 seconds
+    }, 1000); // Check every 30 seconds
 }
 
 // Check for new announcements
